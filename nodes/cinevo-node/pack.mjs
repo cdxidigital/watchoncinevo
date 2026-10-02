@@ -251,6 +251,10 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0install.ps1"
 const WIN_README = `CINEVO Node for Windows (x64)
 ==============================
 
+Product: CINEVO
+Developer: CDXI
+Brand owner: Fourtee2Digital
+
 Loopback-only companion. Binds 127.0.0.1:48184. Never forwards ports.
 Never streams media. Plex / Jellyfin tokens stay on this PC.
 
@@ -290,6 +294,10 @@ echo "Dashboard: http://127.0.0.1:48184"
 const MAC_README = `CINEVO Node for macOS
 =====================
 
+Product: CINEVO
+Developer: CDXI
+Brand owner: Fourtee2Digital
+
 Loopback-only companion. Binds 127.0.0.1:48184.
 
 The app includes the CINEVO icon (AppIcon.icns). The Mach-O binary is
@@ -322,6 +330,8 @@ function infoPlist(arch) {
   <key>CFBundlePackageType</key><string>APPL</string>
   <key>CFBundleIconFile</key><string>AppIcon</string>
   <key>CFBundleIconName</key><string>AppIcon</string>
+  <key>CFBundleDevelopmentRegion</key><string>en</string>
+  <key>CFBundleGetInfoString</key><string>CINEVO by CDXI, a Fourtee2Digital brand</string>
   <key>LSMinimumSystemVersion</key><string>12.0</string>
   <key>NSHighResolutionCapable</key><true/>
   <key>LSArchitecturePriority</key>
@@ -354,6 +364,10 @@ function wrapMac(binary, archLabel, arch) {
 
 const LINUX_README = `CINEVO Node for Linux and NAS (x64)
 =====================================
+
+Product: CINEVO
+Developer: CDXI
+Brand owner: Fourtee2Digital
 
 Private companion for a home server, Unraid, TrueNAS, Synology, or a
 Linux PC. Files stay on this machine. Pairing is required.
