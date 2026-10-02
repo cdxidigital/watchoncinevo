@@ -6,7 +6,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
-export const DEFAULT_APP_NAME = "Grok App";
+export const DEFAULT_APP_NAME = "CINEVO";
 export const OG_SERVICE_URL_DEFAULT = "https://og.grok.me";
 export const OG_SITE_REL_PATH = "src/lib/og/site.json";
 
@@ -151,9 +151,10 @@ export function stripInstallParams(url) {
   return rest ? `${path}?${rest}` : path;
 }
 
-export function renderInstallPageHtml(template, { host, url } = {}) {
+export function renderInstallPageHtml(template, { host, url, appName } = {}) {
+  const name = String(appName ?? "").trim() || appNameFromHost(host);
   return String(template)
-    .replaceAll("{{APP_NAME}}", escapeHtml(appNameFromHost(host)))
+    .replaceAll("{{APP_NAME}}", escapeHtml(name))
     .replaceAll("{{APP_URL}}", escapeHtml(stripInstallParams(url)));
 }
 
@@ -164,7 +165,7 @@ export function renderWebManifest(hostHeader) {
       name,
       short_name: name,
       id: "/",
-      start_url: "/",
+      start_url: publicAppHost(hostHeader) ? "/" : "/app",
       scope: "/",
       display: "standalone",
       background_color: "#000000",
@@ -174,6 +175,18 @@ export function renderWebManifest(hostHeader) {
           src: "/__grok/icon-180.png",
           sizes: "180x180",
           type: "image/png",
+        },
+        {
+          src: "/__grok/icon-180.png",
+          sizes: "512x512",
+          type: "image/png",
+          purpose: "any",
+        },
+        {
+          src: "/__grok/icon-180.png",
+          sizes: "512x512",
+          type: "image/png",
+          purpose: "maskable",
         },
       ],
     },
