@@ -104,12 +104,14 @@ export function PasskeyLogin({
   name,
   desk,
   onAuthed,
+  onExistingAccount,
 }: {
   mode: "in" | "up";
   email: string;
   name: string;
   desk?: string;
   onAuthed: (token: string) => Promise<void>;
+  onExistingAccount?: () => void;
 }) {
   const onAuthedRef = useRef(onAuthed);
   onAuthedRef.current = onAuthed;
@@ -222,6 +224,11 @@ export function PasskeyLogin({
       </button>
       {mode === "up" && !desk ? <p className="passkey-note passkey-note--hint">Your browser asks twice: once to save the key, once to prove it.</p> : null}
       {error ? <p className="text-sm text-cine-danger">{error}</p> : null}
+      {error === "That email already has a house. Sign in, then add a passkey." && onExistingAccount ? (
+        <button type="button" className="login-switch" onClick={onExistingAccount}>
+          Switch to sign in
+        </button>
+      ) : null}
       {!supported ? <p className="passkey-note">This browser has no passkey. Use email below.</p> : null}
       {framed ? (
         <p className="passkey-note">

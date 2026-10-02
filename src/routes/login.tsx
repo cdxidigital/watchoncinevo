@@ -267,6 +267,10 @@ function Login() {
                   const kept = await enterHouse(token, username);
                   if (!kept) setError("The passkey matched, but this browser did not keep the sign-in. Reload and try again.");
                 }}
+                onExistingAccount={() => {
+                  setMode("in");
+                  setError("");
+                }}
               />
               {error ? <p className="text-sm text-cine-danger">{error}</p> : null}
               <p className="login-split">or password</p>
