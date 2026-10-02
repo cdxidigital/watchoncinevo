@@ -21,6 +21,7 @@ export type RemoteNow = {
   titles: RemoteTitle[];
 };
 
+// eslint-disable-next-line no-control-regex
 const CONTROL = /[\u0000-\u001f]/g;
 
 export function normalizeCode(input: unknown): string {

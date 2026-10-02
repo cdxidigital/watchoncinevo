@@ -100,7 +100,7 @@ function inLivePreview(): boolean {
 }
 
 /** Popup when the Vite `/auth/popup` handler is the server: preview or this machine. */
-function useOAuthPopup(): boolean {
+function isOAuthPopup(): boolean {
   if (typeof window === "undefined") return false;
   const host = window.location.hostname;
   return host.endsWith(".grok-sandbox.com") || host === "localhost" || host === "127.0.0.1" || host === "::1";
@@ -132,7 +132,7 @@ export async function signIn(
   // Open the popup SYNCHRONOUSLY on the user gesture — before any await
   // (including signOut). Awaiting first drops user-gesture privilege in some
   // browsers when the opener is a cross-origin live-preview iframe.
-  const popup = useOAuthPopup() ? openSignInPopup(providerId) : null;
+  const popup = isOAuthPopup() ? openSignInPopup(providerId) : null;
 
   // Clear any prior session so switching providers actually switches identity.
   // Bounded because the popup is already open — a request that never settles
@@ -140,13 +140,13 @@ export async function signIn(
   // end a deployed session, so cutting it short at the preview's 1.5s would
   // start OAuth with the old session still live.
   await runPreSignInSignOut({
-    livePreview: inLivePreview() || useOAuthPopup(),
+    livePreview: inLivePreview() || isOAuthPopup(),
     hasBearer: Boolean(getBearerToken()),
     requestSignOut: () => authClient.signOut(),
     clearToken: () => setBearerToken(null),
   });
 
-  if (popup || useOAuthPopup()) {
+  if (popup || isOAuthPopup()) {
     if (!popup) throw new Error("Pop-up blocked — allow pop-ups for sign-in");
     const result = await waitForPopupToken(popup);
     if (!result.token) throw new Error(readableOAuthError(result.error));
