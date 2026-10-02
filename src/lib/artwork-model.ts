@@ -29,7 +29,7 @@ export function safeArtPath(input: string) {
   const path = pathname.startsWith("/") ? pathname : `/${pathname}`;
   if (path.length > 400) return null;
   if (!/^\/(library\/|photo\/|Items\/)/.test(path)) return null;
-  if (query && !/^[\w&=%.\-]+$/.test(query)) return null;
+  if (query && !/^[\w&=%.%-]+$/.test(query)) return null;
   return query ? `${path}?${query}` : path;
 }
 
