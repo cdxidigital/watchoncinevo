@@ -30,7 +30,10 @@ function requestHost(req) {
 
 export function renderInstallPage(hostHeader, url = "/") {
   const template = readFileSync(INSTALL_PAGE_PATH, "utf8");
-  return renderInstallPageHtml(template, { host: hostHeader, url });
+  const site = snapshotOgIdentity(process.cwd()).site;
+  const host = String(hostHeader ?? "");
+  const appName = host.toLowerCase().endsWith(".grok.me") ? "" : site.title;
+  return renderInstallPageHtml(template, { host, url, appName });
 }
 
 function sendHtml(res, html) {

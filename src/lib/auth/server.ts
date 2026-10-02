@@ -124,15 +124,45 @@ const baseURL = explicitBaseURL ?? {
 
 // Origins Better Auth accepts on credentialed POSTs (sign-up/sign-in, etc.).
 // Missing entries here surface as FORBIDDEN "Invalid origin".
-const trustedOrigins: string[] = explicitBaseURL
-  ? [explicitBaseURL, ...LOCAL_DEV_ORIGINS]
+const configuredOrigins = [
+  env("V0_RUNTIME_URL"),
+  env("V0_DEV_APP_URL"),
+  env("V0_BUILD_URL"),
+  env("V0_SANDBOX_URL"),
+  env("VERCEL_URL") && `https://${env("VERCEL_URL")}`,
+  env("VERCEL_PROJECT_PRODUCTION_URL") && `https://${env("VERCEL_PROJECT_PRODUCTION_URL")}`,
+].filter((origin): origin is string => Boolean(origin));
+
+const staticTrustedOrigins: string[] = explicitBaseURL
+  ? [explicitBaseURL, ...configuredOrigins, ...LOCAL_DEV_ORIGINS]
   : [
-      // Host wildcards (matched against Origin's host)
+      // Host wildcards (matched against Origin)
       ...previewAllowedHosts,
       // Full-origin wildcards (matched against Origin)
       ...previewAllowedHosts.flatMap((host) => [`https://${host}`, `http://${host}`]),
+      ...configuredOrigins,
       ...LOCAL_DEV_ORIGINS,
+      "http://localhost:3000",
+      "http://127.0.0.1:3000",
     ];
+
+const trustedOrigins = async (request?: Request): Promise<string[]> => {
+  const origin = request?.headers.get("origin");
+  if (!origin) return [];
+
+  try {
+    const hostname = new URL(origin).hostname;
+    const isKnownPreviewHost = previewAllowedHosts.some((host) =>
+      host.startsWith("*.") ? hostname.endsWith(host.slice(1)) : hostname === host,
+    );
+    const isKnownLocalHost = ["localhost", "127.0.0.1", "::1"].includes(hostname);
+    const isConfiguredOrigin = configuredOrigins.includes(origin) || staticTrustedOrigins.includes(origin);
+
+    return isKnownPreviewHost || isKnownLocalHost || isConfiguredOrigin ? [origin] : [];
+  } catch {
+    return [];
+  }
+};
 
 const databaseUrl = env("DATABASE_URL");
 
