@@ -11,6 +11,8 @@
         android:label="CINEVO"
         android:theme="@android:style/Theme.Material.NoActionBar"
         android:usesCleartextTraffic="true">
+        <meta-data android:name="me.cinevo.developer" android:value="CDXI" />
+        <meta-data android:name="me.cinevo.brand_owner" android:value="Fourtee2Digital" />
         <activity
             android:name=".MainActivity"
             android:configChanges="orientation|screenSize|keyboardHidden|smallestScreenSize|screenLayout"
