@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { renderSVG } from "uqr";
-import { getBearerToken } from "@/lib/auth/client";
+import { getBearerToken, rememberSessionToken } from "@/lib/auth/client";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
 import { b64urlToBytes, bytesToB64url } from "@/lib/passkey-crypto";
 
@@ -267,7 +267,8 @@ export function AddPasskey() {
     setError("");
     setPending(true);
     try {
-      await registerPasskeyInBrowser(user.primaryEmail || "", user.displayName || "");
+      const token = await registerPasskeyInBrowser(user.primaryEmail || "", user.displayName || "");
+      rememberSessionToken(token);
       setDone(true);
     } catch (caught) {
       const message = caught instanceof Error ? caught.message : "Could not add a passkey.";

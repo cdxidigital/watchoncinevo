@@ -193,7 +193,14 @@ function Login() {
         if (!kept) setError("The password matched, but this browser did not keep the sign-in. Reload and try again.");
       }
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Sign-in failed.");
+      const message = caught instanceof Error ? caught.message.toLowerCase() : "";
+      if (message.includes("origin")) {
+        setError("This page could not confirm its address. Reload and try again.");
+      } else if (message.includes("password") || message.includes("credential") || message.includes("account")) {
+        setError("Email or password did not match.");
+      } else {
+        setError("Sign-in could not be completed. Try again.");
+      }
     } finally {
       setPending(false);
     }
