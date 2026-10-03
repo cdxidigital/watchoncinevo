@@ -91,11 +91,18 @@ export function plexStreamTarget(
   });
   if (compatible) {
     params.set("videoCodec", "h264");
+    params.set("videoProfile", "main");
     params.set("audioCodec", "aac");
+    params.set("audioChannels", "2");
     params.set("container", "mp4");
     params.set("videoResolution", "1920x1080");
     params.set("subtitleStreamID", "-1");
     params.set("copyts", "0");
+    params.set("directStreamAudio", "0");
+    params.set("protocol", "http");
+    params.set("X-Plex-Device", "Chrome");
+    params.set("X-Plex-Device-Name", "CINEVO Web");
+    params.set("X-Plex-Provides", "player");
   }
   return {
     url: `${uri.replace(/\/$/, "")}/video/:/transcode/universal/start.mp4?${params.toString()}`,
@@ -129,8 +136,14 @@ export function jellyfinStreamTarget(
     params.set("VideoCodec", "h264");
     params.set("AudioCodec", "aac");
     params.set("Container", "mp4");
-    params.set("SubtitleMethod", "Encode");
+    params.set("SubtitleMethod", "Drop");
     params.set("TranscodingMaxAudioChannels", "2");
+    params.set("AudioBitRate", "192000");
+    params.set("VideoBitRate", "20000000");
+    params.set("MaxWidth", "1920");
+    params.set("MaxHeight", "1080");
+    params.set("RequireAvc", "false");
+    params.set("EnableAutoStreamCopy", "false");
   }
   return {
     url: `${base.replace(/\/$/, "")}/Videos/${encodeURIComponent(id)}/stream.mp4?${params.toString()}`,

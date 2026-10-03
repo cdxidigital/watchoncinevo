@@ -57,12 +57,15 @@ test("a failed browser play can ask the server for an H.264 copy", () => {
   assert.equal(plex.searchParams.get("directPlay"), "0");
   assert.equal(plex.searchParams.get("directStream"), "0");
   assert.equal(plex.searchParams.get("videoCodec"), "h264");
+  assert.equal(plex.searchParams.get("videoProfile"), "main");
   assert.equal(plex.searchParams.get("audioCodec"), "aac");
+  assert.equal(plex.searchParams.get("audioChannels"), "2");
   assert.equal(plex.searchParams.get("container"), "mp4");
   assert.equal(plex.searchParams.get("maxVideoBitrate"), "20000");
   assert.equal(plex.searchParams.get("videoResolution"), "1920x1080");
   assert.equal(plex.searchParams.get("subtitleStreamID"), "-1");
   assert.equal(plex.searchParams.get("copyts"), "0");
+  assert.equal(plex.searchParams.get("X-Plex-Device"), "Chrome");
 
   const localPlex = new URL(plexStreamTarget("http://192.168.1.20:32400/", "plex-99", "secret-token", "client-1").url);
   assert.equal(localPlex.searchParams.get("location"), "lan");
@@ -74,6 +77,10 @@ test("a failed browser play can ask the server for an H.264 copy", () => {
   assert.equal(jellyfin.searchParams.get("VideoCodec"), "h264");
   assert.equal(jellyfin.searchParams.get("AudioCodec"), "aac");
   assert.equal(jellyfin.searchParams.get("Container"), "mp4");
+  assert.equal(jellyfin.searchParams.get("SubtitleMethod"), "Drop");
   assert.equal(jellyfin.searchParams.get("TranscodingMaxAudioChannels"), "2");
+  assert.equal(jellyfin.searchParams.get("VideoBitRate"), "20000000");
+  assert.equal(jellyfin.searchParams.get("AudioBitRate"), "192000");
+  assert.equal(jellyfin.searchParams.get("MaxWidth"), "1920");
   assert.equal(jellyfin.searchParams.get("MaxStreamingBitrate"), "20000000");
 });
