@@ -11,11 +11,14 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppRouteImport } from './routes/app'
+import { Route as CompatibilityRouteImport } from './routes/compatibility'
 import { Route as ConnectRouteImport } from './routes/connect'
 import { Route as HelpRouteImport } from './routes/help'
+import { Route as HowItWorksRouteImport } from './routes/how-it-works'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as NodeRouteImport } from './routes/node'
 import { Route as RemoteRouteImport } from './routes/remote'
+import { Route as StartRouteImport } from './routes/start'
 import { Route as TvRouteImport } from './routes/tv'
 import { Route as ApiIosProfileRouteImport } from './routes/api/ios-profile'
 import { Route as ApiPasskeyRouteImport } from './routes/api/passkey'
@@ -37,6 +40,11 @@ const AppRoute = AppRouteImport.update({
   path: '/app',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CompatibilityRoute = CompatibilityRouteImport.update({
+  id: '/compatibility',
+  path: '/compatibility',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ConnectRoute = ConnectRouteImport.update({
   id: '/connect',
   path: '/connect',
@@ -45,6 +53,11 @@ const ConnectRoute = ConnectRouteImport.update({
 const HelpRoute = HelpRouteImport.update({
   id: '/help',
   path: '/help',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HowItWorksRoute = HowItWorksRouteImport.update({
+  id: '/how-it-works',
+  path: '/how-it-works',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -60,6 +73,11 @@ const NodeRoute = NodeRouteImport.update({
 const RemoteRoute = RemoteRouteImport.update({
   id: '/remote',
   path: '/remote',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StartRoute = StartRouteImport.update({
+  id: '/start',
+  path: '/start',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TvRoute = TvRouteImport.update({
@@ -116,11 +134,14 @@ const ApiStreamTicketRoute = ApiStreamTicketRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/app': typeof AppRoute
+  '/compatibility': typeof CompatibilityRoute
   '/connect': typeof ConnectRoute
   '/help': typeof HelpRoute
+  '/how-it-works': typeof HowItWorksRoute
   '/login': typeof LoginRoute
   '/node': typeof NodeRoute
   '/remote': typeof RemoteRoute
+  '/start': typeof StartRoute
   '/tv': typeof TvRoute
   '/api/ios-profile': typeof ApiIosProfileRoute
   '/api/passkey': typeof ApiPasskeyRoute
@@ -135,11 +156,14 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/app': typeof AppRoute
+  '/compatibility': typeof CompatibilityRoute
   '/connect': typeof ConnectRoute
   '/help': typeof HelpRoute
+  '/how-it-works': typeof HowItWorksRoute
   '/login': typeof LoginRoute
   '/node': typeof NodeRoute
   '/remote': typeof RemoteRoute
+  '/start': typeof StartRoute
   '/tv': typeof TvRoute
   '/api/ios-profile': typeof ApiIosProfileRoute
   '/api/passkey': typeof ApiPasskeyRoute
@@ -155,11 +179,14 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/app': typeof AppRoute
+  '/compatibility': typeof CompatibilityRoute
   '/connect': typeof ConnectRoute
   '/help': typeof HelpRoute
+  '/how-it-works': typeof HowItWorksRoute
   '/login': typeof LoginRoute
   '/node': typeof NodeRoute
   '/remote': typeof RemoteRoute
+  '/start': typeof StartRoute
   '/tv': typeof TvRoute
   '/api/ios-profile': typeof ApiIosProfileRoute
   '/api/passkey': typeof ApiPasskeyRoute
@@ -176,11 +203,14 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/app'
+    | '/compatibility'
     | '/connect'
     | '/help'
+    | '/how-it-works'
     | '/login'
     | '/node'
     | '/remote'
+    | '/start'
     | '/tv'
     | '/api/ios-profile'
     | '/api/passkey'
@@ -195,11 +225,14 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/app'
+    | '/compatibility'
     | '/connect'
     | '/help'
+    | '/how-it-works'
     | '/login'
     | '/node'
     | '/remote'
+    | '/start'
     | '/tv'
     | '/api/ios-profile'
     | '/api/passkey'
@@ -214,11 +247,14 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/app'
+    | '/compatibility'
     | '/connect'
     | '/help'
+    | '/how-it-works'
     | '/login'
     | '/node'
     | '/remote'
+    | '/start'
     | '/tv'
     | '/api/ios-profile'
     | '/api/passkey'
@@ -234,11 +270,14 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AppRoute: typeof AppRoute
+  CompatibilityRoute: typeof CompatibilityRoute
   ConnectRoute: typeof ConnectRoute
   HelpRoute: typeof HelpRoute
+  HowItWorksRoute: typeof HowItWorksRoute
   LoginRoute: typeof LoginRoute
   NodeRoute: typeof NodeRoute
   RemoteRoute: typeof RemoteRoute
+  StartRoute: typeof StartRoute
   TvRoute: typeof TvRoute
   ApiIosProfileRoute: typeof ApiIosProfileRoute
   ApiPasskeyRoute: typeof ApiPasskeyRoute
@@ -267,6 +306,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/compatibility': {
+      id: '/compatibility'
+      path: '/compatibility'
+      fullPath: '/compatibility'
+      preLoaderRoute: typeof CompatibilityRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/connect': {
       id: '/connect'
       path: '/connect'
@@ -279,6 +325,13 @@ declare module '@tanstack/react-router' {
       path: '/help'
       fullPath: '/help'
       preLoaderRoute: typeof HelpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/how-it-works': {
+      id: '/how-it-works'
+      path: '/how-it-works'
+      fullPath: '/how-it-works'
+      preLoaderRoute: typeof HowItWorksRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -300,6 +353,13 @@ declare module '@tanstack/react-router' {
       path: '/remote'
       fullPath: '/remote'
       preLoaderRoute: typeof RemoteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/start': {
+      id: '/start'
+      path: '/start'
+      fullPath: '/start'
+      preLoaderRoute: typeof StartRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/tv': {
@@ -378,11 +438,14 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AppRoute: AppRoute,
+  CompatibilityRoute: CompatibilityRoute,
   ConnectRoute: ConnectRoute,
   HelpRoute: HelpRoute,
+  HowItWorksRoute: HowItWorksRoute,
   LoginRoute: LoginRoute,
   NodeRoute: NodeRoute,
   RemoteRoute: RemoteRoute,
+  StartRoute: StartRoute,
   TvRoute: TvRoute,
   ApiIosProfileRoute: ApiIosProfileRoute,
   ApiPasskeyRoute: ApiPasskeyRoute,

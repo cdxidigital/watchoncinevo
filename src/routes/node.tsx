@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft, CheckCircle2, Computer, KeyRound, Link2, LoaderCircle, RefreshCw, ShieldCheck, Unplug } from "lucide-react";
+import { ArrowLeft, CheckCircle2, KeyRound, Link2, LoaderCircle, RefreshCw, ShieldCheck, Unplug } from "lucide-react";
 import { useState } from "react";
 import { InstallerCards } from "@/components/cinevo/installers";
 import { checkNode, DEFAULT_NODE, nodeStatus, pairNode, revokeConnection, type NodeStatus } from "@/lib/node-client";
@@ -16,7 +16,7 @@ function NodePairing() {
   const clearNodeSession = useCinevo((s) => s.clearNodeSession);
   const [code, setCode] = useState("");
   const [status, setStatus] = useState<NodeStatus | null>(null);
-  const [message, setMessage] = useState("Install CINEVO Node on this computer, then enter its pairing code.");
+  const [message, setMessage] = useState("Install CINEVO Server on this computer, then enter its pairing code.");
   const [loading, setLoading] = useState(false);
   const [ok, setOk] = useState(Boolean(nodeToken));
 
@@ -33,7 +33,7 @@ function NodePairing() {
 
   const pair = async () => {
     if (!code.trim()) {
-      setMessage("Enter the short code shown by CINEVO Node.");
+      setMessage("Enter the short code shown by CINEVO Server.");
       return;
     }
     setLoading(true);
@@ -90,7 +90,7 @@ function NodePairing() {
           <ArrowLeft size={18} />
           <Logo size="md" tagline={false} layout="horizontal" />
         </Link>
-        <span className="font-ui text-xs font-semibold tracking-[0.12em] text-cine-cyan">CINEVO NODE</span>
+        <span className="font-ui text-xs font-semibold tracking-[0.12em] text-cine-cyan">CINEVO SERVER</span>
       </nav>
 
       <main className="relative z-10 mx-auto max-w-6xl px-5 py-12">
@@ -138,15 +138,17 @@ function NodePairing() {
                 <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
               </button>
             </header>
-            <label className="font-ui text-xs font-medium tracking-[0.1em] text-cine-muted">LOCAL NODE ADDRESS</label>
+            <label className="font-ui text-xs font-medium tracking-[0.1em] text-cine-muted">SERVER ADDRESS</label>
             <input
               value={nodeUrl}
               onChange={(e) => setNodeUrl(e.target.value)}
               className="mt-2 h-11 w-full rounded-md border border-cine-border bg-cine-well px-3 font-mono text-sm"
               autoCapitalize="none"
               autoCorrect="off"
-              aria-label="Local Node address"
+              aria-label="CINEVO Server address"
+              placeholder="http://192.168.1.20:48184"
             />
+            <p className="mt-2 text-xs text-cine-faint">Example: http://192.168.1.20:48184. Keep this server on your home network.</p>
             <label className="mt-4 block font-ui text-xs font-medium tracking-[0.1em] text-cine-muted">PAIRING CODE</label>
             <input
               value={code}
@@ -164,12 +166,13 @@ function NodePairing() {
               className="mt-5 flex h-11 w-full items-center justify-center gap-2 rounded-md bg-cine-cyan font-ui font-bold tracking-wider text-cine-bg"
             >
               {loading ? <LoaderCircle size={16} className="animate-spin" /> : <KeyRound size={16} />}
-              Pair with CINEVO Node
+              Pair CINEVO Server
             </button>
             <p className={`mt-3 flex gap-2 text-sm ${ok ? "text-cine-lime" : "text-cine-muted"}`}>
               {ok ? <CheckCircle2 size={14} className="mt-0.5 shrink-0" /> : null}
               {message}
             </p>
+            <p className="mt-4 border-t border-cine-border pt-4 text-xs leading-relaxed text-cine-faint">Safety note: never expose this server address or port to the public internet.</p>
           </aside>
         </section>
 
@@ -216,6 +219,15 @@ function NodePairing() {
             The computer or NAS that holds the files. Linux listens on the home network so this house can pair with it. Do not forward that port to the internet.
           </p>
           <InstallerCards />
+        </section>
+
+        <section className="mt-10 rounded-xl border border-cine-border bg-cine-well p-5">
+          <p className="font-ui text-xs font-semibold tracking-[0.12em] text-cine-cyan">SAFE INSTALL</p>
+          <div className="mt-4 grid gap-4 text-sm text-cine-muted md:grid-cols-3">
+            <p><strong className="text-cine-text">Files stay local.</strong><br />The server reads the folders and media services you choose. CINEVO does not upload your library.</p>
+            <p><strong className="text-cine-text">Do not port-forward.</strong><br />Keep the server on your home network. Remote access should use a deliberate, secured setup.</p>
+            <p><strong className="text-cine-text">Codes expire.</strong><br />Pairing codes are short-lived. Remove a connected server from this page whenever needed.</p>
+          </div>
         </section>
 
         <section className="flow-grid flow-grid--steps mt-14">

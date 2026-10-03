@@ -1,14 +1,17 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { safeArtPath } from "@/lib/artwork-model";
 import { loadTicket } from "@/lib/playback.server";
+import { getSessionUser } from "@/lib/auth/verify.server";
 
 export const Route = createFileRoute("/api/art/$ticket")({
   server: {
     handlers: {
       GET: async ({ request, params }) => {
+        const user = await getSessionUser();
+        if (!user) return new Response("Unauthorized", { status: 401 });
         const path = safeArtPath(new URL(request.url).searchParams.get("path") || "");
         if (!path) return new Response("No artwork", { status: 404 });
-        const ticket = await loadTicket(params.ticket);
+        const ticket = await loadTicket(params.ticket, user.id);
         if (!ticket) return new Response("Artwork expired", { status: 410 });
         const base = ticket.url.replace(/\/$/, "");
         let upstream: Response;

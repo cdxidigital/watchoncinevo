@@ -90,7 +90,7 @@ export default async function grokPwaMiddleware(
       host,
       url: urlWithQuery,
       appName,
-    });
+    } as { host: string; url: string; appName: string });
     return new Response(html, {
       headers: {
         "content-type": "text/html; charset=utf-8",

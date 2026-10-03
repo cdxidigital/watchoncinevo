@@ -65,7 +65,8 @@ function Home() {
           <Link to="/app" search={{ room: "library" }}>
             Your library
           </Link>
-          <Link to="/node">Server</Link>
+          <Link to="/how-it-works">How it works</Link>
+          <Link to="/compatibility">Compatibility</Link>
           <Link to="/help">Help</Link>
         </nav>
         <div className="public-nav__actions">
@@ -106,11 +107,11 @@ function Home() {
           <Reveal as="header">
             <div>
               <span className="public-kicker">GLASS THEMES</span>
-              <h2 id="home-reel-title">Choose the house. The type stays clear.</h2>
+              <h2 id="home-reel-title">Choose your CINEVO look.</h2>
             </div>
             <p>Eight looks. Same layout. Titles, buttons, and the mark stay easy to read.</p>
           </Reveal>
-          <div className="theme-rail" role="listbox" aria-label="Glass themes">
+          <div className="theme-rail" role="listbox" aria-label="CINEVO themes">
             {THEMES.map((item) => (
               <button
                 key={item.id}
@@ -133,6 +134,26 @@ function Home() {
                 <h3>{step.t}</h3>
                 <p>{step.d}</p>
               </Reveal>
+            ))}
+          </div>
+        </section>
+
+        <section className="home-setup" aria-labelledby="home-setup-title">
+          <div>
+            <span className="public-kicker">START HERE</span>
+            <h2 id="home-setup-title">Three steps to your first play.</h2>
+          </div>
+          <div className="home-library-steps">
+            {[
+              ["01", "Install CINEVO Server", "Put the server on the computer or NAS that holds your library."],
+              ["02", "Pair your device", "Use the short local code to connect your player to the server."],
+              ["03", "Watch your library", "Choose the sections you want, then press play."],
+            ].map(([n, t, d]) => (
+              <article key={n}>
+                <span>{n}</span>
+                <h3>{t}</h3>
+                <p>{d}</p>
+              </article>
             ))}
           </div>
         </section>
