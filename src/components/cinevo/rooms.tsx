@@ -497,9 +497,19 @@ export function BrowseRoom({ kind: initialKind = "all" }: { kind?: "all" | "movi
           </div>
         ) : null}
       </div>
+      <div className="browse-summary" aria-live="polite">
+        <span>{titles.length ? `${titles.length} ${kind === "series" ? "episodes or series" : "titles"}` : "No matching titles"}</span>
+        {library.length && !titles.length ? (
+          <span>Try All or connect a library that contains {kind === "series" ? "series" : "films"}.</span>
+        ) : null}
+      </div>
       <LibraryBoard
         titles={titles}
-        empty="No titles yet. Import a library from Plex, Jellyfin, a folder, or Node."
+        empty={
+          kind === "series"
+            ? "No series or episodes yet. Import a folder with video files, or connect Plex or Jellyfin."
+            : "No titles yet. Import a library from Plex, Jellyfin, a folder, or Node."
+        }
       />
     </div>
   );

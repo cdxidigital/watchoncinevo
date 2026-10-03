@@ -78,10 +78,11 @@ export function titleFromFile(file: File, folderName: string, index: number): Li
   const id = `folder-${hash(`${folderName}:${file.name}:${file.size}`)}`;
   const url = rememberBlob(id, file);
   const accent = ACCENTS[index % ACCENTS.length];
+  const isEpisode = /(?:s\d{1,2}\s*e\d{1,3}|\d{1,2}\s*x\s*\d{1,3}|(?:episode|ep)[ ._-]*\d{1,3})/i.test(file.name);
   return {
     id,
     title: parsed.title,
-    kind: /s\d{2}e\d{2}/i.test(file.name) ? "series" : "movie",
+    kind: isEpisode ? "series" : "movie",
     year: parsed.year || "—",
     runtime: file.size > 2_000_000_000 ? "2h+" : file.size > 700_000_000 ? "~2h" : "~90m",
     genre: "Home library",
