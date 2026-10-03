@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useRouteContext } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { GROK_PROVIDERS, authClient, authEnabled, getBearerToken, rememberSessionToken, sessionTokenFromAuthResponse, signIn } from "@/lib/auth/client";
 import { Logo } from "@/components/cinevo/logo";
@@ -41,6 +41,13 @@ function Login() {
   const [username, setUsername] = useState("");
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
+  // Set by the root loader when the server has sign-in disabled for missing
+  // production config (see `@/lib/auth/unavailable`).
+  const authUnavailableMessage = useRouteContext({
+    from: "__root__",
+    select: (ctx) =>
+      ctx.sessionUser && "authNotConfigured" in ctx.sessionUser ? ctx.sessionUser.error : null,
+  });
 
   useEffect(() => {
     setMode(initial);
@@ -199,7 +206,7 @@ function Login() {
     }
   };
 
-  if (isPending || signedIn) {
+  if (!authUnavailableMessage && (isPending || signedIn)) {
     return (
       <main className="login-stage">
         <div className="login-card" aria-busy="true">
@@ -232,6 +239,11 @@ function Login() {
         </p>
 
         {authEnabled ? (
+          authUnavailableMessage ? (
+            <div role="alert" className="mt-8 rounded-xl border border-cine-border bg-cine-elevated p-4 text-sm text-cine-danger">
+              {authUnavailableMessage} Please try again later.
+            </div>
+          ) : (
           <>
             <form onSubmit={(e) => void submit(e)} className="grid gap-3">
               {mode === "up" ? (
@@ -327,6 +339,7 @@ function Login() {
               ))}
             </div>
           </>
+          )
         ) : (
           <p className="mt-8 text-sm text-cine-muted">Sign-in is disabled.</p>
         )}

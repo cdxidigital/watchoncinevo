@@ -13,7 +13,12 @@ const fetchSessionUser = createServerFn({ method: "GET" }).handler(async () => {
     const { getSessionUser } = await import("@/lib/auth/verify.server");
     const u = await getSessionUser();
     return u ? { id: u.id, email: u.email } : null;
-  } catch {
+  } catch (error) {
+    // Missing production auth config is already logged once at startup; don't
+    // repeat it per request. Public pages keep rendering either way.
+    if (error instanceof Error && error.name === "AuthNotConfiguredError") {
+      return { id: "", email: "", error: error.message, authNotConfigured: true as const };
+    }
     return null;
   }
 });

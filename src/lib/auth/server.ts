@@ -37,6 +37,7 @@ import { randomBytes } from "node:crypto";
 import { Pool } from "pg";
 import { ensureDbReady, getPglite } from "../db";
 import { emailAndPasswordEnabled } from "./email-password";
+import { authDisabledForMissingSecret } from "./unavailable";
 import { GATE_PROVIDER_ID, gateIdentitySessions } from "./gate-session.server";
 import { GROK_PROVIDERS } from "./providers";
 import { pgliteDialect } from "./pglite-dialect";
@@ -74,6 +75,10 @@ const env = (key: string): string | undefined => {
 // provisions auth; set it to "false" to force auth off everywhere (dev user).
 const authDisabled = env("VITE_AUTH_ENABLED") === "false";
 
+/** Production must use an injected signing secret; preview may use its process-stable fallback. */
+const authSecret = env("BETTER_AUTH_SECRET");
+const isProduction = process.env.NODE_ENV === "production";
+
 // Broker federation creds: the deployer injects a per-app client when deployed;
 // otherwise fall back to the shared live-preview client, which the broker accepts
 // for any `*.grok-sandbox.com` callback (see `./preview`).
@@ -84,6 +89,34 @@ const grokClientSecret = env("GROK_AUTH_CLIENT_SECRET") ?? PREVIEW_CLIENT_SECRET
 /** True when federated sign-in is active (real auth is enforced). */
 export const authConfigured =
   !authDisabled && Boolean(grokClientId && grokClientSecret);
+
+/**
+ * Production with auth on but no signing secret: auth is DISABLED (not made
+ * insecure). We never fall back to a hardcoded or per-boot random secret in
+ * production. Instead `auth` is `null`, `/api/auth/*` answers 503 and anything
+ * that needs a user fails closed, while public pages keep rendering.
+ * Dev / live preview is unchanged (process-stable preview secret).
+ */
+export const authUnavailable = isProduction && authConfigured && !authSecret;
+
+if (isProduction && authConfigured) {
+  const missing = [
+    !authSecret && "BETTER_AUTH_SECRET",
+    !env("BETTER_AUTH_URL") && "BETTER_AUTH_URL",
+    !env("DATABASE_URL") &&
+      "DATABASE_URL (without it auth and app data use the in-memory PGLite fallback, which wipes all users and sessions on every cold start)",
+  ].filter(Boolean);
+  if (authUnavailable) {
+    console.error(
+      `[auth] Sign-in is DISABLED: BETTER_AUTH_SECRET is not set in production. ` +
+        `Missing env vars: ${missing.join(", ")}. ` +
+        `Public pages still render; /api/auth/* returns 503 and signed-in features are unavailable. ` +
+        `Set these on the hosting project's environment and redeploy.`,
+    );
+  } else if (missing.length > 0) {
+    console.warn(`[auth] Production auth is missing recommended env vars: ${missing.join(", ")}.`);
+  }
+}
 
 // This app's own Better Auth origin. When deployed the deployer injects the
 // public URL. In the sandbox live preview there's no fixed URL (each preview gets
@@ -211,11 +244,12 @@ const grokOAuthPlugin = authConfigured
     })
   : null;
 
-export const auth = betterAuth({
+function createAuth(secret: string) {
+  return betterAuth({
   baseURL,
   // Deployed apps inject BETTER_AUTH_SECRET. Preview: process-stable secret on
   // globalThis so HMR doesn't invalidate PGLite-backed sessions (see above).
-  secret: env("BETTER_AUTH_SECRET") ?? previewAuthSecret(),
+  secret,
   database,
 
   // CSRF / origin check for credentialed auth POSTs (email sign-up/sign-in, …).
@@ -289,7 +323,21 @@ export const auth = betterAuth({
     // last so it runs after every other plugin's hooks.
     tanstackStartCookies(),
   ],
-});
+  });
+}
+
+/**
+ * This app's Better Auth instance, or `null` when auth is unavailable (production
+ * without `BETTER_AUTH_SECRET`, see `authUnavailable`). Callers must handle `null`
+ * by failing closed (503 / `AuthNotConfiguredError`), never by skipping auth.
+ */
+// Production never signs with the preview fallback: no real secret -> no auth.
+export const auth: ReturnType<typeof createAuth> | null = authDisabledForMissingSecret(
+  process.env.NODE_ENV,
+  authSecret,
+)
+  ? null
+  : createAuth(authSecret ?? previewAuthSecret());
 
 export function readSessionToken(): string | null {
   return getCookie(SESSION_TOKEN_COOKIE) ?? null;

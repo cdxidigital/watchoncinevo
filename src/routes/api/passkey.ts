@@ -1,6 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { approveDesk, loginPasskey, newChallenge, openDesk, readDesk, registerPasskey } from "@/lib/passkey.server";
 import { pageOrigin, passkeyHostError } from "@/lib/passkey-crypto";
+import { AUTH_NOT_CONFIGURED_CODE, AUTH_NOT_CONFIGURED_MESSAGE } from "@/lib/auth/unavailable";
+import { isAuthNotConfiguredError } from "@/lib/auth/verify.server";
 
 function json(body: unknown, status = 200, cookie?: string) {
   const headers = new Headers({ "content-type": "application/json", "cache-control": "no-store" });
@@ -52,6 +54,16 @@ export const Route = createFileRoute("/api/passkey")({
           }
           return json({ error: "Unknown request." }, 400);
         } catch (error) {
+          if (isAuthNotConfiguredError(error)) {
+            return json(
+              {
+                code: AUTH_NOT_CONFIGURED_CODE,
+                message: AUTH_NOT_CONFIGURED_MESSAGE,
+                error: AUTH_NOT_CONFIGURED_MESSAGE,
+              },
+              503,
+            );
+          }
           const message = error instanceof Error ? error.message : "Passkey failed.";
           return json({ error: message }, 400);
         }

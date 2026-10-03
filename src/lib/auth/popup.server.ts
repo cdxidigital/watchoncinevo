@@ -17,6 +17,7 @@
  * `client.ts` (`signIn` → `openSignInPopup`).
  */
 import { auth, SESSION_TOKEN_COOKIE } from "./server";
+import { authNotConfiguredResponse } from "./unavailable";
 import { headersForOAuth, resolveOAuthPublicOrigin } from "./oauth-origin";
 
 /** Message shape the popup posts to the opener (must match `client.ts`). */
@@ -68,6 +69,7 @@ export async function handleAuthPopupRequest(request: Request): Promise<Response
 
   // Stay first-party for the callback so the session cookie lands in THIS popup.
   const back = `${appOrigin}/auth/popup?done=1`;
+  if (!auth) return authNotConfiguredResponse();
   try {
     const apiRes = await auth.api.signInWithOAuth2({
       body: {
