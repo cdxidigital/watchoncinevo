@@ -1,4 +1,4 @@
-import { Bell, Clapperboard, Home, Library, Menu, Search, Settings2, Sparkles, Tv, Wrench, X } from "lucide-react";
+import { Bell, Home, Library, Menu, Search, Server, Settings2, Sparkles, Wrench, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { paramFromRoom } from "@/lib/app-destination";
@@ -13,8 +13,6 @@ import { AuthSlot, UsernameGate } from "./account";
 
 const NAV: { id: Room; label: string; icon: typeof Home }[] = [
   { id: "stage", label: "Home", icon: Home },
-  { id: "movies", label: "Movies", icon: Clapperboard },
-  { id: "shows", label: "TV", icon: Tv },
   { id: "sidebar", label: "Library", icon: Library },
   { id: "tools", label: "Tools", icon: Wrench },
 ];
@@ -73,6 +71,9 @@ export function Shell({
   overlays?: React.ReactNode;
 }) {
   const room = useCinevo((s) => s.room);
+  const sources = useCinevo((s) => s.sources);
+  const nodeUrl = useCinevo((s) => s.nodeUrl);
+  const nodeToken = useCinevo((s) => s.nodeToken);
   const setRoom = useCinevo((s) => s.setRoom);
   const setSearchOpen = useCinevo((s) => s.setSearchOpen);
   const setSettingsOpen = useCinevo((s) => s.setSettingsOpen);
@@ -94,9 +95,14 @@ export function Shell({
   const [drawer, setDrawer] = useState(false);
   const [navHidden, setNavHidden] = useState(false);
 
+  const serverMode = networkMode(sources, nodeUrl, nodeToken);
+  const serverLabel =
+    serverMode === "relay" ? "Remote server" : serverMode === "local" ? "This device" : "Set up server";
+  const nav = [...NAV.slice(0, 1), { id: "sidebar" as Room, label: serverLabel, icon: Server }, ...NAV.slice(1)];
+
   useEffect(() => {
-    if (!NAV.some((item) => item.id === room)) setRoom("stage");
-  }, [room, setRoom]);
+    if (!nav.some((item) => item.id === room)) setRoom("stage");
+  }, [nav, room, setRoom]);
 
   useEffect(() => {
     if (!drawer) return;
@@ -302,7 +308,7 @@ export function Shell({
             ) : null}
             <nav className="flex flex-col gap-1" aria-label="Main">
               <LibrarySwitch />
-              {NAV.map((item) => {
+          {nav.map((item) => {
                 const Icon = item.icon;
                 return (
                   <button

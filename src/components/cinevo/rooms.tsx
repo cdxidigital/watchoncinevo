@@ -510,21 +510,42 @@ export function SidebarRoom() {
   const remote = useCinevo((s) => s.remoteTitles);
   const yours = [...local, ...remote];
   return (
-    <div className="house-page house-page--flow">
-      <header>
-        <BrandKicker>CINEVO · Add sources</BrandKicker>
-        <h1>Add sources</h1>
-        <p className="lede">
-          Folders scan in this browser. Sign in with Plex or Jellyfin to index and proxy playback. Pair Node for disk
-          paths on another computer.
-        </p>
-      </header>
-      <AddLibrary />
-      {yours.length ? (
-        <div className="mt-10">
-          <h2 className="rail-heading">In your library</h2>
-          <LibraryBoard titles={yours} />
+    <div className="house-page house-page--flow library-room">
+      <header className="library-room__header">
+        <div>
+          <BrandKicker>CINEVO · Library</BrandKicker>
+          <h1>Your library</h1>
+          <p className="lede">
+            Connect Plex, Jellyfin, or folders to bring your collection into one calm place. Playback stays on the
+            server you connected.
+          </p>
         </div>
+        <div className="library-room__stats" aria-label="Library summary">
+          <span><b>{yours.length}</b><small>{yours.length === 1 ? "title" : "titles"}</small></span>
+          <span><b>{new Set(yours.map((title) => title.sourceLabel || title.source)).size}</b><small>sources</small></span>
+        </div>
+      </header>
+      <section className="library-room__connect" aria-labelledby="library-connect-heading">
+        <div className="library-room__section-head">
+          <div>
+            <p className="house-kicker">ADD A SOURCE</p>
+            <h2 id="library-connect-heading">Bring your shelves together</h2>
+          </div>
+          <p>Choose a connection below. You can add more than one.</p>
+        </div>
+        <AddLibrary />
+      </section>
+      {yours.length ? (
+        <section className="library-room__collection" aria-labelledby="library-collection-heading">
+          <div className="library-room__section-head">
+            <div>
+              <p className="house-kicker">YOUR COLLECTION</p>
+              <h2 id="library-collection-heading">Everything in your house</h2>
+            </div>
+            <p>Browse, sort, and pick up where you left off.</p>
+          </div>
+          <LibraryBoard titles={yours} />
+        </section>
       ) : null}
     </div>
   );
