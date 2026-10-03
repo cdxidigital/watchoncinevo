@@ -21,6 +21,14 @@ export const Route = createFileRoute("/api/remote")({
   server: {
     handlers: {
       GET: async ({ request }) => {
+        try {
+          await userId(request);
+        } catch (error) {
+          if (isAuthNotConfiguredError(error)) {
+            return json({ ok: false, code: AUTH_NOT_CONFIGURED_CODE, message: AUTH_NOT_CONFIGURED_MESSAGE, error: AUTH_NOT_CONFIGURED_MESSAGE }, 503);
+          }
+          return json({ ok: false, error: "Sign in to use the remote." }, 401);
+        }
         const code = normalizeCode(new URL(request.url).searchParams.get("code"));
         if (!code) return json({ ok: false, error: "Enter the six-character code from the house." }, 400);
         const row = await readRemote(code);

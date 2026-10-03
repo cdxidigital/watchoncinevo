@@ -70,7 +70,7 @@ export function syncHouseRemote(code: string, now: RemoteNow) {
 export async function sendRemoteCommand(code: string, command: RemoteCommandInput) {
   const res = await fetch("/api/remote", {
     method: "POST",
-    headers: { "content-type": "application/json" },
+    headers: headers(),
     credentials: "same-origin",
     body: JSON.stringify({ action: "command", code, command: { ...command, id: `p-${Date.now()}` } }),
   });

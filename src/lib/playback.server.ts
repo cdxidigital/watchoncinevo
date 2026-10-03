@@ -53,7 +53,7 @@ export async function loadTicket(id: string, userId: string) {
     where id = ${id} and user_id = ${userId} and expires_at > now()
   `;
   const row = rows[0];
-  if (!row) return null;
+  if (!row || serverAddressError(row.url)) return null;
   let headers: Record<string, string> = {};
   try {
     headers = (typeof row.headers === "string" ? JSON.parse(row.headers) : row.headers) as Record<string, string>;

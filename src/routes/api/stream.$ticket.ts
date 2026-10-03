@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { loadTicket } from "@/lib/playback.server";
+import { serverAddressError } from "@/lib/playback-urls";
 import { getSessionUser } from "@/lib/auth/verify.server";
 
 function isVideoResponse(status: number, type: string) {
@@ -13,6 +14,19 @@ function upstreamHeaders(ticketHeaders: Record<string, string>, range: string) {
   headers.set("Accept-Encoding", "identity");
   if (range) headers.set("Range", range);
   return headers;
+}
+
+async function fetchMedia(url: string, init: RequestInit) {
+  let current = url;
+  for (let redirects = 0; redirects <= 3; redirects += 1) {
+    if (serverAddressError(current)) throw new Error("Blocked media address");
+    const response = await fetch(current, { ...init, redirect: "manual" });
+    if (response.status < 300 || response.status >= 400) return response;
+    const location = response.headers.get("location");
+    if (!location || redirects === 3) throw new Error("Too many media redirects");
+    current = new URL(location, current).toString();
+  }
+  throw new Error("Too many media redirects");
 }
 
 function passHeaders(upstream: Response, download: boolean) {
@@ -40,9 +54,8 @@ export const Route = createFileRoute("/api/stream/$ticket")({
         const range = request.headers.get("range") || "";
         let upstream: Response;
         try {
-          upstream = await fetch(ticket.url, {
+          upstream = await fetchMedia(ticket.url, {
             headers: upstreamHeaders(ticket.headers, range),
-            redirect: "follow",
           });
         } catch {
           return new Response("CINEVO could not reach that media server.", { status: 502 });
@@ -63,16 +76,14 @@ export const Route = createFileRoute("/api/stream/$ticket")({
         if (!ticket) return new Response(null, { status: 410 });
         const range = request.headers.get("range") || "";
         try {
-          let upstream = await fetch(ticket.url, {
+          let upstream = await fetchMedia(ticket.url, {
             method: "HEAD",
             headers: upstreamHeaders(ticket.headers, range),
-            redirect: "follow",
           });
           if (upstream.status === 405 || upstream.status === 501) {
-            upstream = await fetch(ticket.url, {
+            upstream = await fetchMedia(ticket.url, {
               method: "GET",
               headers: upstreamHeaders(ticket.headers, range || "bytes=0-1"),
-              redirect: "follow",
             });
             await upstream.body?.cancel();
           }
