@@ -83,8 +83,17 @@ const authDisabled = env("VITE_AUTH_ENABLED") === "false";
  * starts without committing a public fallback secret to the repository.
  */
 const isProduction = process.env.NODE_ENV === "production";
-const databaseUrl = env("DATABASE_URL");
-const configuredAuthSecret = env("BETTER_AUTH_SECRET") ?? env("CINEVO_AUTH_SECRET");
+const databaseUrl =
+  env("DATABASE_URL") ??
+  env("POSTGRES_URL") ??
+  env("POSTGRES_PRISMA_URL") ??
+  env("SUPABASE_DB_URL");
+const configuredAuthSecret =
+  env("BETTER_AUTH_SECRET") ??
+  env("CINEVO_AUTH_SECRET") ??
+  env("SUPABASE_SECRET_KEY") ??
+  env("SUPABASE_SERVICE_ROLE_KEY") ??
+  env("SUPABASE_JWT_SECRET");
 const derivedDatabaseAuthSecret =
   isProduction && !configuredAuthSecret && databaseUrl
     ? createHash("sha256")
