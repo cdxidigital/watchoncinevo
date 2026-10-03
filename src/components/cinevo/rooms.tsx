@@ -82,21 +82,11 @@ function OsDeck({
 }
 
 function OsDock({
-  link,
-  libraries,
-  continueWatching,
-  onPlay,
-  onOpen,
   onAdd,
   onAsk,
   onShare,
   onSettings,
 }: {
-  link: { mode: "local" | "relay" | "idle"; label: string; detail: string };
-  libraries: number;
-  continueWatching: Title[];
-  onPlay: (id: string) => void;
-  onOpen: (id: string) => void;
   onAdd: () => void;
   onAsk: () => void;
   onShare: () => void;
@@ -110,37 +100,6 @@ function OsDock({
   ];
   return (
     <aside className="os-dock" aria-label="House status">
-      <section className="os-card">
-        <header>
-          <span className="net-dot" data-mode={link.mode} aria-hidden="true" />
-          Server
-        </header>
-        <b>{link.label}</b>
-        <small>{libraries ? `${libraries} ${libraries === 1 ? "library" : "libraries"}` : link.detail}</small>
-      </section>
-      <section className="os-card">
-        <header>Now in progress</header>
-        {continueWatching.length ? (
-          <ul className="os-now">
-            {continueWatching.slice(0, 3).map((title) => (
-              <li key={title.id}>
-                <button type="button" onClick={() => onOpen(title.id)}>
-                  <ArtImage src={title.still || title.poster} fallback="/stills/neon-alley.jpg" className="os-now__art" />
-                  <span>
-                    <b>{title.title}</b>
-                    <small>{title.runtime}</small>
-                  </span>
-                </button>
-                <button type="button" className="os-now__play" aria-label={`Play ${title.title}`} onClick={() => onPlay(title.id)}>
-                  <Play size={12} fill="currentColor" />
-                </button>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <small>Start a title and it stays here.</small>
-        )}
-      </section>
       <section className="os-card">
         <header>Quick actions</header>
         <div className="os-actions">
@@ -430,13 +389,8 @@ export function StageRoom() {
           )}
         </div>
         {library.length ? (
-          <OsDock
-            link={link}
-            libraries={sources.length}
-            continueWatching={continueWatching}
-            onPlay={play}
-            onOpen={openTitle}
-            onAdd={() => setRoom("sidebar")}
+        <OsDock
+          onAdd={() => setRoom("sidebar")}
             onAsk={() => setCoreOpen(true, "ai")}
             onShare={() => setCoreOpen(true, "sharing")}
             onSettings={() => setSettingsOpen(true)}

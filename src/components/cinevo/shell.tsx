@@ -1,4 +1,4 @@
-import { Bell, Home, Library, Menu, Search, Server, Settings2, Sparkles, Wrench, X } from "lucide-react";
+import { Bell, Home, Library, Menu, Play, Search, Server, Settings2, Sparkles, Wrench, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { paramFromRoom } from "@/lib/app-destination";
@@ -178,7 +178,7 @@ export function Shell({
           <Logo size="sm" tagline={false} />
         </Link>
         <nav className="side-rail__nav" aria-label="Main">
-          {NAV.map((item) => {
+          {nav.map((item) => {
             const Icon = item.icon;
             return (
               <button
@@ -193,6 +193,10 @@ export function Shell({
               </button>
             );
           })}
+          <button type="button" onClick={() => go("stage")} className={cn(room === "stage" && "is-subtle")}>
+            <Play size={18} />
+            Continue watching
+          </button>
           <button
             type="button"
             className={cn(coreOpen && coreTab === "ai" && "is-on")}

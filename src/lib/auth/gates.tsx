@@ -1,6 +1,6 @@
 import { useState, useSyncExternalStore, type ReactNode } from "react";
 import { Navigate } from "@tanstack/react-router";
-import { GROK_PROVIDERS, authEnabled, signIn, signOut } from "./client";
+import { GROK_PROVIDERS, authClient, authEnabled, signIn, signOut } from "./client";
 import { hasGateSessionMarker } from "./gate-session-marker";
 import { resolveSignInGateState } from "./sign-in-gate";
 import { useCurrentUser, useCurrentUserState } from "./use-current-user";
@@ -92,6 +92,10 @@ export function UserButton() {
   // Sign-out can take a moment (and can fail when deployed), so the control
   // shows it is working and cannot be fired twice.
   const [signingOut, setSigningOut] = useState(false);
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState(user?.displayName ?? "");
+  const [message, setMessage] = useState("");
+  const [busy, setBusy] = useState(false);
   const gateSession = useSyncExternalStore(
     subscribeToNothing,
     hasGateSessionMarker,
@@ -99,34 +103,51 @@ export function UserButton() {
   );
   if (!user) return null;
   const label = user.displayName ?? user.primaryEmail ?? "Account";
+  const saveProfile = async () => {
+    setBusy(true);
+    setMessage("");
+    const result = await authClient.updateUser({ name: name.trim() });
+    setBusy(false);
+    setMessage(result.error ? "Could not save your profile." : "Profile saved.");
+  };
+  const resetPassword = async () => {
+    if (!user.primaryEmail) return;
+    setBusy(true);
+    setMessage("");
+    const result = await authClient.requestPasswordReset({ email: user.primaryEmail, redirectTo: "/reset-password" });
+    setBusy(false);
+    setMessage(result.error ? "Could not send a reset email." : "Check your email for a reset link.");
+  };
+  const deleteAccount = async () => {
+    if (!window.confirm("Delete your account and all account data? This cannot be undone.")) return;
+    setBusy(true);
+    const result = await authClient.deleteUser();
+    if (result.error) {
+      setBusy(false);
+      setMessage("Could not delete your account.");
+      return;
+    }
+    await signOut();
+  };
+
   return (
-    <div className="flex items-center gap-2">
-      {user.profileImageUrl ? (
-        <img
-          src={user.profileImageUrl}
-          alt=""
-          className="h-8 w-8 rounded-full object-cover"
-        />
-      ) : (
-        <span className="grid h-8 w-8 place-items-center rounded-full bg-black/10 text-sm font-medium dark:bg-white/20">
-          {label.charAt(0).toUpperCase()}
-        </span>
-      )}
-      <span className="text-sm font-medium">{label}</span>
-      {authEnabled && !gateSession && (
-        <button
-          type="button"
-          disabled={signingOut}
-          onClick={() => {
-            setSigningOut(true);
-            // Success navigates away; on failure re-enable so it can be retried.
-            void signOut().catch(() => setSigningOut(false));
-          }}
-          className="cursor-pointer text-sm underline-offset-4 opacity-70 hover:underline disabled:cursor-wait disabled:no-underline"
-        >
-          {signingOut ? "Signing out…" : "Sign out"}
-        </button>
-      )}
+    <div className="relative flex items-center gap-2">
+      <button type="button" className="flex items-center gap-2" onClick={() => setOpen((value) => !value)} aria-expanded={open}>
+        {user.profileImageUrl ? <img src={user.profileImageUrl} alt="" className="h-8 w-8 rounded-full object-cover" /> : <span className="grid h-8 w-8 place-items-center rounded-full bg-black/10 text-sm font-medium dark:bg-white/20">{label.charAt(0).toUpperCase()}</span>}
+        <span className="text-sm font-medium">{label}</span>
+      </button>
+      {open ? (
+        <div className="absolute right-0 top-11 z-50 w-72 rounded-2xl border border-cine-line bg-cine-bg p-4 shadow-2xl">
+          <p className="text-xs uppercase tracking-wider text-cine-faint">Account</p>
+          <label className="mt-3 block text-xs font-semibold text-cine-muted" htmlFor="account-name">Display name</label>
+          <input id="account-name" value={name} onChange={(event) => setName(event.target.value)} className="mt-1 h-10 w-full rounded-lg border border-cine-line bg-cine-well px-3 text-sm" />
+          <button type="button" disabled={busy} onClick={() => void saveProfile()} className="house-btn house-btn--play mt-3 w-full">Save profile</button>
+          {authEnabled && user.primaryEmail ? <button type="button" disabled={busy} onClick={() => void resetPassword()} className="mt-3 w-full text-left text-sm text-cine-muted hover:text-cine-text">Reset password</button> : null}
+          {message ? <p className="mt-2 text-xs text-cine-muted" role="status">{message}</p> : null}
+          {authEnabled && !gateSession ? <button type="button" disabled={busy || signingOut} onClick={() => { setSigningOut(true); void signOut().catch(() => setSigningOut(false)); }} className="mt-3 w-full text-left text-sm text-cine-muted">{signingOut ? "Signing out…" : "Sign out"}</button> : null}
+          {authEnabled && !gateSession ? <button type="button" disabled={busy} onClick={() => void deleteAccount()} className="mt-3 w-full text-left text-sm text-cine-danger">Delete account</button> : null}
+        </div>
+      ) : null}
     </div>
   );
 }
