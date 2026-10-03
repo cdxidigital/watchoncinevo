@@ -9,3 +9,6 @@ node_modules/
 nodes/cinevo-node/dist/
 artifacts/
 screenshots/
+nodes/cinevo-node/tools/certs/cinevo-node.key
+nodes/cinevo-node/tools/certs/cinevo-node.crt
+nodes/cinevo-node/tools/certs/cinevo-node.p12
