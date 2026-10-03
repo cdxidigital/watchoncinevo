@@ -33,7 +33,7 @@ import { betterAuth } from "better-auth";
 import { bearer, genericOAuth } from "better-auth/plugins";
 import { tanstackStartCookies } from "better-auth/tanstack-start";
 import { getCookie } from "@tanstack/react-start/server";
-import { randomBytes } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import { Pool } from "pg";
 import { ensureDbReady, getPglite } from "../db";
 import { emailAndPasswordEnabled } from "./email-password";
@@ -75,9 +75,31 @@ const env = (key: string): string | undefined => {
 // provisions auth; set it to "false" to force auth off everywhere (dev user).
 const authDisabled = env("VITE_AUTH_ENABLED") === "false";
 
-/** Production must use an injected signing secret; preview may use its process-stable fallback. */
-const authSecret = env("BETTER_AUTH_SECRET");
+/**
+ * Production needs a stable signing secret. Prefer an explicit Better Auth /
+ * Cinevo secret. On hosts that provision only DATABASE_URL (for example a
+ * generic Vercel deployment), derive a domain-separated 256-bit secret from
+ * that server-only database credential. This keeps sessions stable across cold
+ * starts without committing a public fallback secret to the repository.
+ */
 const isProduction = process.env.NODE_ENV === "production";
+const databaseUrl = env("DATABASE_URL");
+const configuredAuthSecret = env("BETTER_AUTH_SECRET") ?? env("CINEVO_AUTH_SECRET");
+const derivedDatabaseAuthSecret =
+  isProduction && !configuredAuthSecret && databaseUrl
+    ? createHash("sha256")
+        .update("cinevo:better-auth:v1\0")
+        .update(databaseUrl)
+        .digest("hex")
+    : undefined;
+const authSecret = configuredAuthSecret ?? derivedDatabaseAuthSecret;
+
+if (derivedDatabaseAuthSecret) {
+  console.warn(
+    "[auth] BETTER_AUTH_SECRET is not set; using a stable secret derived from DATABASE_URL. " +
+      "Set BETTER_AUTH_SECRET or CINEVO_AUTH_SECRET to decouple auth sessions from database credential rotation.",
+  );
+}
 
 // Broker federation creds: the deployer injects a per-app client when deployed;
 // otherwise fall back to the shared live-preview client, which the broker accepts
@@ -128,6 +150,7 @@ const explicitBaseURL = env("BETTER_AUTH_URL");
 // Explicit `string[]` (not a readonly tuple) — Better Auth's DynamicBaseURLConfig
 // requires a mutable `allowedHosts: string[]`.
 const previewAllowedHosts: string[] = [...PREVIEW_ALLOWED_HOSTS];
+const CINEVO_PRODUCTION_ORIGINS = ["https://cinevo.fourtee2.digital"] as const;
 // Local `npm run dev` (port 8080 contract). Browsers may send Origin as any of
 // these for the same server — trusting only `localhost` rejects `127.0.0.1` and
 // breaks email/password with "Invalid origin".
@@ -142,6 +165,7 @@ const baseURL = explicitBaseURL ?? {
   allowedHosts: [
     ...previewAllowedHosts,
     "*.vercel.app",
+    "cinevo.fourtee2.digital",
     "localhost",
     "localhost:8080",
     "127.0.0.1",
@@ -167,13 +191,14 @@ const configuredOrigins = [
 ].filter((origin): origin is string => Boolean(origin));
 
 const staticTrustedOrigins: string[] = explicitBaseURL
-  ? [explicitBaseURL, ...configuredOrigins, ...LOCAL_DEV_ORIGINS]
+  ? [explicitBaseURL, ...configuredOrigins, ...CINEVO_PRODUCTION_ORIGINS, ...LOCAL_DEV_ORIGINS]
   : [
       // Host wildcards (matched against Origin)
       ...previewAllowedHosts,
       // Full-origin wildcards (matched against Origin)
       ...previewAllowedHosts.flatMap((host) => [`https://${host}`, `http://${host}`]),
       ...configuredOrigins,
+      ...CINEVO_PRODUCTION_ORIGINS,
       ...LOCAL_DEV_ORIGINS,
       "http://localhost:3000",
       "http://127.0.0.1:3000",
@@ -196,8 +221,6 @@ const trustedOrigins = async (request?: Request): Promise<string[]> => {
     return [];
   }
 };
-
-const databaseUrl = env("DATABASE_URL");
 
 // Static broker OAuth endpoints (skip OIDC discovery on every sign-in / callback).
 // Discovery would cost an extra network hop to the broker before the popup can
