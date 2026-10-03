@@ -52,20 +52,8 @@ export const Route = createFileRoute("/api/passkey")({
           }
           return json({ error: "Unknown request." }, 400);
         } catch (error) {
-          const message = error instanceof Error ? error.message : "";
-          const known = [
-            "This page could not confirm its address. Reload and try again.",
-            "Passkey response was incomplete.",
-            "That passkey prompt expired. Try again.",
-            "Enter the email for this house.",
-            "That email already has a house. Sign in, then add a passkey.",
-            "That passkey is already on another house.",
-            "No passkey on this house matches that one. Create an account first.",
-            "That passkey looks copied. Use the original device.",
-            "Sign in on this phone first.",
-            "That code expired. Scan a new one.",
-          ];
-          return json({ error: known.includes(message) ? message : "Passkey verification could not be completed. Try again." }, 400);
+          const message = error instanceof Error ? error.message : "Passkey failed.";
+          return json({ error: message }, 400);
         }
       },
     },

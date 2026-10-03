@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { renderSVG } from "uqr";
-import { getBearerToken, rememberSessionToken } from "@/lib/auth/client";
+import { getBearerToken } from "@/lib/auth/client";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
 import { b64urlToBytes, bytesToB64url } from "@/lib/passkey-crypto";
 
@@ -104,14 +104,12 @@ export function PasskeyLogin({
   name,
   desk,
   onAuthed,
-  onExistingAccount,
 }: {
   mode: "in" | "up";
   email: string;
   name: string;
   desk?: string;
   onAuthed: (token: string) => Promise<void>;
-  onExistingAccount?: () => void;
 }) {
   const onAuthedRef = useRef(onAuthed);
   onAuthedRef.current = onAuthed;
@@ -224,11 +222,6 @@ export function PasskeyLogin({
       </button>
       {mode === "up" && !desk ? <p className="passkey-note passkey-note--hint">Your browser asks twice: once to save the key, once to prove it.</p> : null}
       {error ? <p className="text-sm text-cine-danger">{error}</p> : null}
-      {error === "That email already has a house. Sign in, then add a passkey." && onExistingAccount ? (
-        <button type="button" className="login-switch" onClick={onExistingAccount}>
-          Switch to sign in
-        </button>
-      ) : null}
       {!supported ? <p className="passkey-note">This browser has no passkey. Use email below.</p> : null}
       {framed ? (
         <p className="passkey-note">
@@ -267,8 +260,7 @@ export function AddPasskey() {
     setError("");
     setPending(true);
     try {
-      const token = await registerPasskeyInBrowser(user.primaryEmail || "", user.displayName || "");
-      rememberSessionToken(token);
+      await registerPasskeyInBrowser(user.primaryEmail || "", user.displayName || "");
       setDone(true);
     } catch (caught) {
       const message = caught instanceof Error ? caught.message : "Could not add a passkey.";
