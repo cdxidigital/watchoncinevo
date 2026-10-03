@@ -80,8 +80,8 @@ function CastNode() {
 
   return (
     <section className="remote-join glass-strong">
-      <h2>Cast to a server</h2>
-      <p>Windows, Mac, Linux, and NAS. Open the receiver on that computer and use the cast code.</p>
+      <h2>Cast to any screen</h2>
+      <p>Use CINEVO from Windows, macOS, Linux, NAS, Android, iPhone, or a smart TV browser. The open receiver protocol keeps casting vendor-neutral.</p>
       <form onSubmit={(event) => void load(event)}>
         <label>
           Server
@@ -308,7 +308,7 @@ function RemotePage() {
         <p className="remote-app__kicker">Get the player</p>
         <PhoneApps />
         <p>
-          Android and Android TV are sideload apps. The iPhone profile installs the same player on the Home Screen. It watches, casts, and remotes. A localhost address will not open from the phone.
+          Works in modern browsers on Windows, macOS, Linux, Android, iPhone, Android TV, and smart TVs with a browser. Android and Android TV can install the app; iPhone can add it to the Home Screen. Use the computer&apos;s LAN address instead of localhost when connecting another device.
         </p>
       </footer>
     </main>
