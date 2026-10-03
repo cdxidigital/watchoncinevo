@@ -193,14 +193,7 @@ function Login() {
         if (!kept) setError("The password matched, but this browser did not keep the sign-in. Reload and try again.");
       }
     } catch (caught) {
-      const message = caught instanceof Error ? caught.message.toLowerCase() : "";
-      if (message.includes("origin")) {
-        setError("This page could not confirm its address. Reload and try again.");
-      } else if (message.includes("password") || message.includes("credential") || message.includes("account")) {
-        setError("Email or password did not match.");
-      } else {
-        setError("Sign-in could not be completed. Try again.");
-      }
+      setError(caught instanceof Error ? caught.message : "Sign-in failed.");
     } finally {
       setPending(false);
     }
@@ -273,10 +266,6 @@ function Login() {
                 onAuthed={async (token) => {
                   const kept = await enterHouse(token, username);
                   if (!kept) setError("The passkey matched, but this browser did not keep the sign-in. Reload and try again.");
-                }}
-                onExistingAccount={() => {
-                  setMode("in");
-                  setError("");
                 }}
               />
               {error ? <p className="text-sm text-cine-danger">{error}</p> : null}

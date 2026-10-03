@@ -149,7 +149,7 @@ export function parsePlexSections(raw: unknown): PlexSection[] {
 export function parsePlexMetadata(raw: unknown, sourceLabel: string) {
   const container = (raw as { MediaContainer?: { Metadata?: unknown[] } })?.MediaContainer;
   const meta = container?.Metadata || [];
-  return meta.map((item) => {
+  return meta.slice(0, 80).map((item) => {
     const m = item as Record<string, unknown>;
     const facts = factsFromPlex(m, String(m.ratingKey || ""));
     const genreTag = facts.genre || "Plex";
