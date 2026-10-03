@@ -30,7 +30,7 @@ export function serverAddressError(uri: string) {
   return null;
 }
 
-export type PlaybackFit = "original" | "compatible";
+export type PlaybackFit = "original" | "compatible" | "safe";
 
 function playbackLocation(uri: string) {
   try {
@@ -61,7 +61,8 @@ export function plexStreamTarget(
 ) {
   const key = ratingKey.replace(/^plex-/, "").replace(/^\//, "");
   const client = clientId || "cinevo-web";
-  const compatible = fit === "compatible";
+  const compatible = fit !== "original";
+  const safe = fit === "safe";
   const location = playbackLocation(uri);
   const params = new URLSearchParams({
     hasMDE: "1",
@@ -73,8 +74,8 @@ export function plexStreamTarget(
     directPlay: "0",
     directStream: compatible ? "0" : "1",
     directStreamAudio: compatible ? "0" : "1",
-    videoQuality: compatible ? "80" : "99",
-    maxVideoBitrate: compatible ? "20000" : "200000",
+    videoQuality: safe ? "60" : compatible ? "80" : "99",
+    maxVideoBitrate: safe ? "8000" : compatible ? "20000" : "200000",
     location,
     mediaBufferSize: compatible ? "10240" : "20480",
     subtitleSize: "100",
@@ -91,11 +92,11 @@ export function plexStreamTarget(
   });
   if (compatible) {
     params.set("videoCodec", "h264");
-    params.set("videoProfile", "main");
+    params.set("videoProfile", safe ? "baseline" : "main");
     params.set("audioCodec", "aac");
     params.set("audioChannels", "2");
     params.set("container", "mp4");
-    params.set("videoResolution", "1920x1080");
+    params.set("videoResolution", safe ? "1280x720" : "1920x1080");
     params.set("subtitleStreamID", "-1");
     params.set("copyts", "0");
     params.set("directStreamAudio", "0");
@@ -125,11 +126,11 @@ export function jellyfinStreamTarget(
 ) {
   const id = itemId.replace(/^jellyfin-/, "").replace(/^jf-/, "");
   const client = clientId || "cinevo-web";
-  const compatible = fit === "compatible";
+  const compatible = fit !== "original";
+  const safe = fit === "safe";
   const params = new URLSearchParams({
     Static: compatible ? "false" : "true",
-    MediaSourceId: id,
-    MaxStreamingBitrate: compatible ? "20000000" : "200000000",
+    MaxStreamingBitrate: safe ? "8000000" : compatible ? "20000000" : "200000000",
     api_key: token,
   });
   if (compatible) {
@@ -139,9 +140,9 @@ export function jellyfinStreamTarget(
     params.set("SubtitleMethod", "Drop");
     params.set("TranscodingMaxAudioChannels", "2");
     params.set("AudioBitRate", "192000");
-    params.set("VideoBitRate", "20000000");
-    params.set("MaxWidth", "1920");
-    params.set("MaxHeight", "1080");
+    params.set("VideoBitRate", safe ? "8000000" : "20000000");
+    params.set("MaxWidth", safe ? "1280" : "1920");
+    params.set("MaxHeight", safe ? "720" : "1080");
     params.set("RequireAvc", "false");
     params.set("EnableAutoStreamCopy", "false");
   }
