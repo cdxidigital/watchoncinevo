@@ -85,11 +85,9 @@ export default async function grokPwaMiddleware(
     acceptsHtml(event.req.headers.get("accept"))
   ) {
     const host = requestHost(event);
-    const appName = host.toLowerCase().endsWith(".grok.me") ? "" : grokOgIdentity.site.title;
     const html = renderInstallPageHtml(installPageTemplate, {
       host,
       url: urlWithQuery,
-      appName,
     });
     return new Response(html, {
       headers: {
