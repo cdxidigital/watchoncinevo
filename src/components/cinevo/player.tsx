@@ -394,9 +394,11 @@ export function Player() {
   if (!title) return null;
 
   const missing = remotePending
-    ? fit === "compatible"
-      ? "This file will not play as-is. Asking your server for a browser-friendly copy…"
-      : "Opening a private stream through CINEVO…"
+    ? fit === "safe"
+      ? "Trying a safer H.264 copy for this browser…"
+      : fit === "compatible"
+        ? "This file will not play as-is. Asking your server for a browser-friendly copy…"
+        : "Opening a private stream through CINEVO…"
     : remoteErr
       ? remoteErr
       : title.source === "folder"
@@ -453,17 +455,24 @@ export function Player() {
             if (
               !blob &&
               remoteSrc?.includes("/api/stream") &&
-              fit === "original" &&
               (title.source === "plex" || title.source === "jellyfin")
             ) {
-              setFit("compatible");
-              setPlaybackFailed(false);
-              return;
+              if (fit === "original") {
+                setFit("compatible");
+                setPlaybackFailed(false);
+                return;
+              }
+              if (fit === "compatible") {
+                setFit("safe");
+                setPlaybackFailed(false);
+                return;
+              }
             }
             setPlaybackFailed(true);
             if (blob) setRemoteErr("This file could not be played in the browser.");
             else if (remoteSrc?.includes("/v1/play")) setRemoteErr("Could not play this file from Node on this computer.");
-            else if (fit === "compatible") setRemoteErr("Your server could not make a browser-friendly copy of this file.");
+            else if (fit === "safe") setRemoteErr("The media server could not produce a browser-compatible H.264 stream for this file.");
+            else if (fit === "compatible") setRemoteErr("The first browser-compatible stream failed. Trying a safer copy…");
             else setRemoteErr("CINEVO could not play this file through the proxy. The server has to be reachable from here.");
           }}
           onEnded={() => {
@@ -497,9 +506,11 @@ export function Player() {
           <div>
             <dt>Quality</dt>
             <dd>
-              {fit === "compatible"
-                ? "Browser copy · your server"
-                : file?.startsWith("/api/stream")
+              {fit === "safe"
+                ? "Safe browser copy · H.264 720p"
+                : fit === "compatible"
+                  ? "Browser copy · H.264 1080p"
+                  : file?.startsWith("/api/stream")
                   ? "Original · proxied"
                   : file
                     ? "Original on this device"
