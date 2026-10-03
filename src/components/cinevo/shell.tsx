@@ -1,4 +1,4 @@
-import { Bell, Home, Library, Menu, Play, Search, Server, Settings2, Sparkles, Wrench, X } from "lucide-react";
+import { Bell, Clapperboard, Home, Library, Menu, Search, Settings2, Sparkles, Tv, Wrench, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { paramFromRoom } from "@/lib/app-destination";
@@ -13,6 +13,8 @@ import { AuthSlot, UsernameGate } from "./account";
 
 const NAV: { id: Room; label: string; icon: typeof Home }[] = [
   { id: "stage", label: "Home", icon: Home },
+  { id: "movies", label: "Movies", icon: Clapperboard },
+  { id: "shows", label: "TV", icon: Tv },
   { id: "sidebar", label: "Library", icon: Library },
   { id: "tools", label: "Tools", icon: Wrench },
 ];
@@ -71,9 +73,6 @@ export function Shell({
   overlays?: React.ReactNode;
 }) {
   const room = useCinevo((s) => s.room);
-  const sources = useCinevo((s) => s.sources);
-  const nodeUrl = useCinevo((s) => s.nodeUrl);
-  const nodeToken = useCinevo((s) => s.nodeToken);
   const setRoom = useCinevo((s) => s.setRoom);
   const setSearchOpen = useCinevo((s) => s.setSearchOpen);
   const setSettingsOpen = useCinevo((s) => s.setSettingsOpen);
@@ -95,14 +94,9 @@ export function Shell({
   const [drawer, setDrawer] = useState(false);
   const [navHidden, setNavHidden] = useState(false);
 
-  const serverMode = networkMode(sources, nodeUrl, nodeToken);
-  const serverLabel =
-    serverMode === "relay" ? "Remote server" : serverMode === "local" ? "This device" : "Set up server";
-  const nav = [...NAV.slice(0, 1), { id: "sidebar" as Room, label: serverLabel, icon: Server }, ...NAV.slice(1)];
-
   useEffect(() => {
-    if (!nav.some((item) => item.id === room)) setRoom("stage");
-  }, [nav, room, setRoom]);
+    if (!NAV.some((item) => item.id === room)) setRoom("stage");
+  }, [room, setRoom]);
 
   useEffect(() => {
     if (!drawer) return;
@@ -178,7 +172,7 @@ export function Shell({
           <Logo size="sm" tagline={false} />
         </Link>
         <nav className="side-rail__nav" aria-label="Main">
-          {nav.map((item) => {
+          {NAV.map((item) => {
             const Icon = item.icon;
             return (
               <button
@@ -193,10 +187,6 @@ export function Shell({
               </button>
             );
           })}
-          <button type="button" onClick={() => go("stage")} className={cn(room === "stage" && "is-subtle")}>
-            <Play size={18} />
-            Continue watching
-          </button>
           <button
             type="button"
             className={cn(coreOpen && coreTab === "ai" && "is-on")}
@@ -312,7 +302,7 @@ export function Shell({
             ) : null}
             <nav className="flex flex-col gap-1" aria-label="Main">
               <LibrarySwitch />
-          {nav.map((item) => {
+              {NAV.map((item) => {
                 const Icon = item.icon;
                 return (
                   <button

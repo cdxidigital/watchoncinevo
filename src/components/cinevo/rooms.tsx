@@ -82,11 +82,21 @@ function OsDeck({
 }
 
 function OsDock({
+  link,
+  libraries,
+  continueWatching,
+  onPlay,
+  onOpen,
   onAdd,
   onAsk,
   onShare,
   onSettings,
 }: {
+  link: { mode: "local" | "relay" | "idle"; label: string; detail: string };
+  libraries: number;
+  continueWatching: Title[];
+  onPlay: (id: string) => void;
+  onOpen: (id: string) => void;
   onAdd: () => void;
   onAsk: () => void;
   onShare: () => void;
@@ -100,6 +110,37 @@ function OsDock({
   ];
   return (
     <aside className="os-dock" aria-label="House status">
+      <section className="os-card">
+        <header>
+          <span className="net-dot" data-mode={link.mode} aria-hidden="true" />
+          Server
+        </header>
+        <b>{link.label}</b>
+        <small>{libraries ? `${libraries} ${libraries === 1 ? "library" : "libraries"}` : link.detail}</small>
+      </section>
+      <section className="os-card">
+        <header>Now in progress</header>
+        {continueWatching.length ? (
+          <ul className="os-now">
+            {continueWatching.slice(0, 3).map((title) => (
+              <li key={title.id}>
+                <button type="button" onClick={() => onOpen(title.id)}>
+                  <ArtImage src={title.still || title.poster} fallback="/stills/neon-alley.jpg" className="os-now__art" />
+                  <span>
+                    <b>{title.title}</b>
+                    <small>{title.runtime}</small>
+                  </span>
+                </button>
+                <button type="button" className="os-now__play" aria-label={`Play ${title.title}`} onClick={() => onPlay(title.id)}>
+                  <Play size={12} fill="currentColor" />
+                </button>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <small>Start a title and it stays here.</small>
+        )}
+      </section>
       <section className="os-card">
         <header>Quick actions</header>
         <div className="os-actions">
@@ -389,8 +430,13 @@ export function StageRoom() {
           )}
         </div>
         {library.length ? (
-        <OsDock
-          onAdd={() => setRoom("sidebar")}
+          <OsDock
+            link={link}
+            libraries={sources.length}
+            continueWatching={continueWatching}
+            onPlay={play}
+            onOpen={openTitle}
+            onAdd={() => setRoom("sidebar")}
             onAsk={() => setCoreOpen(true, "ai")}
             onShare={() => setCoreOpen(true, "sharing")}
             onSettings={() => setSettingsOpen(true)}
@@ -464,42 +510,21 @@ export function SidebarRoom() {
   const remote = useCinevo((s) => s.remoteTitles);
   const yours = [...local, ...remote];
   return (
-    <div className="house-page house-page--flow library-room">
-      <header className="library-room__header">
-        <div>
-          <BrandKicker>CINEVO · Library</BrandKicker>
-          <h1>Your library</h1>
-          <p className="lede">
-            Connect Plex, Jellyfin, or folders to bring your collection into one calm place. Playback stays on the
-            server you connected.
-          </p>
-        </div>
-        <div className="library-room__stats" aria-label="Library summary">
-          <span><b>{yours.length}</b><small>{yours.length === 1 ? "title" : "titles"}</small></span>
-          <span><b>{new Set(yours.map((title) => title.sourceLabel || title.source)).size}</b><small>sources</small></span>
-        </div>
+    <div className="house-page house-page--flow">
+      <header>
+        <BrandKicker>CINEVO · Add sources</BrandKicker>
+        <h1>Add sources</h1>
+        <p className="lede">
+          Folders scan in this browser. Sign in with Plex or Jellyfin to index and proxy playback. Pair Node for disk
+          paths on another computer.
+        </p>
       </header>
-      <section className="library-room__connect" aria-labelledby="library-connect-heading">
-        <div className="library-room__section-head">
-          <div>
-            <p className="house-kicker">ADD A SOURCE</p>
-            <h2 id="library-connect-heading">Bring your shelves together</h2>
-          </div>
-          <p>Choose a connection below. You can add more than one.</p>
-        </div>
-        <AddLibrary />
-      </section>
+      <AddLibrary />
       {yours.length ? (
-        <section className="library-room__collection" aria-labelledby="library-collection-heading">
-          <div className="library-room__section-head">
-            <div>
-              <p className="house-kicker">YOUR COLLECTION</p>
-              <h2 id="library-collection-heading">Everything in your house</h2>
-            </div>
-            <p>Browse, sort, and pick up where you left off.</p>
-          </div>
+        <div className="mt-10">
+          <h2 className="rail-heading">In your library</h2>
           <LibraryBoard titles={yours} />
-        </section>
+        </div>
       ) : null}
     </div>
   );

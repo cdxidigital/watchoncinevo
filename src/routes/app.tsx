@@ -1,5 +1,5 @@
 import { createFileRoute, Navigate, useNavigate } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { Shell } from "@/components/cinevo/shell";
 import { RoomSwitch } from "@/components/cinevo/rooms";
 import {
@@ -43,13 +43,8 @@ function AppSkeleton() {
 }
 
 function Cinema() {
-  const [hydrated, setHydrated] = useState(false);
   const { user, isPending } = useCurrentUserState();
   const sessionRetry = useRef(false);
-
-  useEffect(() => {
-    setHydrated(true);
-  }, []);
   const room = useCinevo((s) => s.room);
   const setRoom = useCinevo((s) => s.setRoom);
   const setCoreOpen = useCinevo((s) => s.setCoreOpen);
@@ -87,7 +82,7 @@ function Cinema() {
     });
   }, [navigate]);
 
-  if (!hydrated || isPending) return <AppSkeleton />;
+  if (isPending) return <AppSkeleton />;
   if (!user && getBearerToken() && !sessionRetry.current) {
     sessionRetry.current = true;
     void authClient.getSession();
