@@ -158,9 +158,16 @@ export const createShare = createServerFn({ method: "POST" })
     if (!USERNAME_RE.test(guest)) {
       return { ok: false as const, error: "Name the friend by their CINEVO username." };
     }
-    const days = Math.min(30, Math.max(1, Number(data.days) || 7));
-    const libraries = (data.libraries || []).slice(0, 12);
-    const titles = (data.titles || []).slice(0, 200).map((t) => ({
+    const requestedDays = Number(data.days);
+    const days = Number.isInteger(requestedDays) ? Math.min(30, Math.max(1, requestedDays)) : 7;
+    const libraries = Array.isArray(data.libraries)
+      ? data.libraries
+          .filter((library): library is string => typeof library === "string")
+          .map((library) => library.trim().slice(0, 120))
+          .filter(Boolean)
+          .slice(0, 12)
+      : [];
+    const titles = (Array.isArray(data.titles) ? data.titles : []).slice(0, 200).map((t) => ({
       id: String(t.id || "").slice(0, 80),
       title: String(t.title || "Untitled").slice(0, 160),
       year: String(t.year || "").slice(0, 8),
