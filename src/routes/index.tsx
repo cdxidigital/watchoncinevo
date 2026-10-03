@@ -65,7 +65,8 @@ function Home() {
           <Link to="/app" search={{ room: "library" }}>
             Your library
           </Link>
-          <Link to="/node">Server</Link>
+          <Link to="/how-it-works">How it works</Link>
+          <Link to="/compatibility">Compatibility</Link>
           <Link to="/help">Help</Link>
         </nav>
         <div className="public-nav__actions">

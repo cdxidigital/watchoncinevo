@@ -10,6 +10,10 @@ function Help() {
       title="How the house works."
       lede="CINEVO only shows media you connect. There is no public catalog and no sample library."
     >
+      <section className="rounded-xl border border-cine-border bg-cine-surface p-5">
+        <h2>Start here</h2>
+        <p>New to CINEVO? Follow the <Link to="/start">setup walkthrough</Link>, or read <Link to="/how-it-works">how the pieces fit together</Link> before you install anything.</p>
+      </section>
       <section>
         <h2>Sign in</h2>
         <p>Use Google, X, or email and a password. After that, claim a username so friends can share a catalog with you.</p>
