@@ -48,7 +48,7 @@ function Login() {
 
   useEffect(() => {
     if (!oauthError) return;
-    setError("Google or X did not finish signing in. Try again, or use a passkey.");
+    setError("Google or CINEVO did not finish signing in. Try again, or use a passkey.");
   }, [oauthError]);
 
   const goHouse = () => {
