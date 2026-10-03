@@ -44,7 +44,7 @@
     color: var(--color-cine-text);
     height: 100%;
     min-height: 100%;
-    overflow-x: clip;
+    overflow: hidden;
   }
   html {
     font-size: clamp(16px, 14.5px + 0.32vw, 18.5px);
@@ -3501,6 +3501,10 @@ html[data-theme="iris"] .cinevo-house {
 }
 
 @media (min-width: 768px) {
+  .cinevo-house {
+    --content-left: calc(var(--rail) + 1.25rem);
+  }
+
   .side-rail {
     position: fixed;
     z-index: 28;
@@ -3517,7 +3521,7 @@ html[data-theme="iris"] .cinevo-house {
   }
 
   .top-nav {
-    left: calc(var(--rail) + 1.25rem);
+    left: var(--content-left);
     width: auto;
   }
 
@@ -3548,12 +3552,16 @@ html[data-theme="iris"] .cinevo-house {
   }
 
   .house-main {
-    width: calc(100% - var(--rail) - 1.25rem);
-    margin-left: calc(var(--rail) + 1.25rem);
+    position: absolute;
+    inset: 0 0 0 var(--content-left);
+    width: auto;
+    margin-left: 0;
   }
 
   .house-main.house-main--page {
-    width: min(110rem, calc(100% - var(--rail) - 1.25rem));
+    width: auto;
+    max-width: none;
+    margin-right: 0;
   }
 }
 
@@ -4342,6 +4350,10 @@ html[data-tv="1"] a:focus-visible {
 }
 
 @media (min-width: 768px) {
+  .cinevo-house {
+    --content-left: calc(var(--rail) + 2rem);
+  }
+
   .side-rail {
     top: 14px;
     bottom: 14px;
@@ -4360,8 +4372,7 @@ html[data-tv="1"] a:focus-visible {
     z-index: 45;
   }
   .house-main {
-    width: calc(100% - var(--rail) - 1.75rem);
-    margin-left: calc(var(--rail) + 1.75rem);
+    inset: 0 0 0 var(--content-left);
   }
 }
 
@@ -4870,6 +4881,4 @@ html[data-theme="iris"] .os-card {
     padding: 1.15rem 1.1rem 1rem;
   }
 }
-
-
 
