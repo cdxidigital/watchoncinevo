@@ -1,6 +1,7 @@
 import { getRequest } from "@tanstack/react-start/server";
 import { gateIdentityEnabled } from "./gate-identity.server";
 import { auth, authConfigured } from "./server";
+import { AuthNotConfiguredError } from "./unavailable";
 
 /**
  * Server-side session resolution (server-only).
@@ -17,6 +18,7 @@ const databaseConfigured = Boolean(process.env.DATABASE_URL?.trim());
 
 /** Re-export so callers can branch on it without importing `server.ts`. */
 export { authConfigured };
+export { AuthNotConfiguredError, isAuthNotConfiguredError } from "./unavailable";
 
 if (databaseConfigured && !authConfigured) {
   console.error(
@@ -58,6 +60,9 @@ export async function getSessionUser(
   bearerToken?: string,
 ): Promise<VerifiedUser | null> {
   if (!authConfigured && !gateIdentityEnabled()) return null;
+  // Auth is wanted but disabled for missing production config (no
+  // BETTER_AUTH_SECRET): fail closed with a 503-style error, never "signed in".
+  if (!auth) throw new AuthNotConfiguredError();
   const request = getRequest();
   if (!request) return null;
   let headers = request.headers;
@@ -80,6 +85,8 @@ export async function getSessionUser(
  *   closed): one shared dev user on a real database would let every visitor
  *   read/write everyone's rows.
  * - Auth disabled + no database -> the shared dev user id.
+ * - Auth enabled but not configured (production without BETTER_AUTH_SECRET) ->
+ *   throws `AuthNotConfiguredError` (status 503).
  */
 export async function requireUserId(bearerToken?: string): Promise<string> {
   if (!authConfigured && !gateIdentityEnabled()) {

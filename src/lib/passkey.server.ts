@@ -1,4 +1,5 @@
 import { auth, SESSION_TOKEN_COOKIE } from "@/lib/auth/server";
+import { AuthNotConfiguredError } from "@/lib/auth/unavailable";
 import { getSql } from "@/lib/db";
 import { b64urlToBytes, bytesToB64url, pageOrigin, verifyAssertion } from "@/lib/passkey-crypto";
 
@@ -10,12 +11,17 @@ type PasskeyRow = {
   counter: number;
 };
 
+function configuredAuth() {
+  if (!auth) throw new AuthNotConfiguredError();
+  return auth;
+}
+
 function randomId() {
   return bytesToB64url(crypto.getRandomValues(new Uint8Array(32)));
 }
 
 async function signedToken(raw: string) {
-  const ctx = await auth.$context;
+  const ctx = await configuredAuth().$context;
   const key = await crypto.subtle.importKey(
     "raw",
     new TextEncoder().encode(ctx.secret),
@@ -30,7 +36,7 @@ async function signedToken(raw: string) {
 }
 
 export async function issueSession(userId: string) {
-  const ctx = await auth.$context;
+  const ctx = await configuredAuth().$context;
   const session = await ctx.internalAdapter.createSession(userId);
   if (!session?.token) throw new Error("Could not start a session.");
   const token = await signedToken(session.token);
@@ -39,7 +45,7 @@ export async function issueSession(userId: string) {
 }
 
 export async function userFromRequest(request: Request) {
-  const session = await auth.api.getSession({ headers: request.headers });
+  const session = await configuredAuth().api.getSession({ headers: request.headers });
   if (session?.user?.id) return session.user.id;
   const header = request.headers.get("authorization") || "";
   if (!header.toLowerCase().startsWith("bearer ")) return null;
@@ -51,7 +57,7 @@ export async function userFromRequest(request: Request) {
   }
   const token = decoded.split(".")[0];
   if (!token) return null;
-  const ctx = await auth.$context;
+  const ctx = await configuredAuth().$context;
   const found = await ctx.internalAdapter.findSession(token);
   return found?.user?.id ?? null;
 }
@@ -107,7 +113,7 @@ export async function registerPasskey(request: Request, body: {
     origin: where.origin,
     rpId: where.rpId,
   });
-  const ctx = await auth.$context;
+  const ctx = await configuredAuth().$context;
   const existing = await ctx.internalAdapter.findUserByEmail(email);
   const signedIn = await userFromRequest(request);
   let userId = "";
