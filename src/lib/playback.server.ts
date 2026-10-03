@@ -24,7 +24,8 @@ export async function createTicket(input: {
   const blocked = serverAddressError(uri);
   if (blocked) return { ok: false as const, error: blocked };
   const clientId = input.clientId || "cinevo-web";
-  const fit = input.fit === "compatible" ? "compatible" : "original";
+  const fit: PlaybackFit =
+    input.fit === "safe" ? "safe" : input.fit === "compatible" ? "compatible" : "original";
   const target =
     input.provider === "plex"
       ? plexStreamTarget(uri, key, token, clientId, fit)
