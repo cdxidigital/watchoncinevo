@@ -88,6 +88,15 @@ test("parses library sections and metadata", () => {
         Metadata: [
           { ratingKey: "99", title: "Heat", year: 1995, type: "movie", summary: "LA.", Genre: [{ tag: "Crime" }] },
           { ratingKey: "100", title: "The Bear", year: 2022, type: "show" },
+          {
+            ratingKey: "101",
+            title: "Review",
+            type: "episode",
+            grandparentTitle: "The Bear",
+            parentIndex: 1,
+            index: 7,
+            summary: "Service gets sharp.",
+          },
         ],
       },
     },
@@ -98,6 +107,9 @@ test("parses library sections and metadata", () => {
   assert.equal(titles[0].genre, "Crime");
   assert.equal(titles[1].kind, "series");
   assert.equal(titles[1].sourceLabel, "Home NAS");
+  assert.equal(titles[2].kind, "series");
+  assert.equal(titles[2].title, "The Bear - S01E07 - Review");
+  assert.deepEqual(titles[2].genres.slice(0, 2), ["The Bear", "Season 1"]);
 });
 
 test("isPlexServer reads comma provides", () => {

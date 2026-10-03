@@ -86,6 +86,17 @@ export async function addNodeConnection(
 }
 
 export type NodeSection = { key: string; title: string; type?: string; count?: number };
+export type NodeTitle = {
+  id?: string;
+  title?: string;
+  year?: string;
+  kind?: string;
+  genre?: string;
+  genres?: string[];
+  synopsis?: string;
+  path?: string;
+  poster?: string;
+};
 
 export async function listNodeSections(base: string, token: string, connectionId: string) {
   const { res, data } = await nodeFetch(base, "/v1/sections", {
@@ -109,7 +120,7 @@ export async function importNodeSections(
     body: JSON.stringify({ connectionId, sectionKeys }),
   });
   if (!res.ok) return { ok: false as const, error: String(data.error || "Import failed") };
-  return { ok: true as const, titles: (data.titles as Array<Record<string, string>>) || [] };
+  return { ok: true as const, titles: (data.titles as NodeTitle[]) || [] };
 }
 
 export async function addNodeFolder(base: string, token: string, folderPath: string) {
@@ -123,7 +134,7 @@ export async function addNodeFolder(base: string, token: string, folderPath: str
     ok: true as const,
     id: String(data.id || ""),
     name: String(data.name || folderPath),
-    titles: (data.titles as Array<Record<string, string>>) || [],
+    titles: (data.titles as NodeTitle[]) || [],
     count: Number(data.count || 0),
   };
 }

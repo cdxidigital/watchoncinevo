@@ -67,6 +67,48 @@ export function parseFilename(fileName: string) {
   return { title: stem || base.replace(VIDEO_EXT, ""), year, fileName: base };
 }
 
+export function parseMediaFilename(fileName: string) {
+  const base = fileName.split(/[/\\]/).pop() || fileName;
+  const parsed = parseFilename(base);
+  const rawStem = base.replace(VIDEO_EXT, "");
+  const clean = rawStem.replace(/[._]+/g, " ").replace(/\s+/g, " ").trim();
+  const episodeHit =
+    /\bS(?<season>\d{1,2})\s*E(?<episode>\d{1,3})(?:\s*(?:-|–|—)\s*(?<name>.+))?/i.exec(clean) ||
+    /\b(?<season>\d{1,2})x(?<episode>\d{1,3})(?:\s*(?:-|–|—)\s*(?<name>.+))?/i.exec(clean);
+  if (!episodeHit?.groups) return { ...parsed, kind: "movie" as const };
+
+  const season = Number(episodeHit.groups.season);
+  const episode = Number(episodeHit.groups.episode);
+  const before = clean.slice(0, episodeHit.index).trim();
+  const after = (episodeHit.groups.name || clean.slice(episodeHit.index + episodeHit[0].length)).trim();
+  const seriesTitle = tidyTitle(before.replace(/\b(?:season|series)\s*\d{1,2}\b/gi, "")) || parsed.title;
+  const episodeTitle = tidyTitle(
+    after
+      .replace(/\b(?:1080p|720p|2160p|480p|4k|uhd|hdr|bluray|webrip|web-dl|x264|x265|hevc|dts|aac|remux)\b/gi, "")
+      .replace(/\b(?:19|20)\d{2}\b/g, ""),
+  );
+  const code = `S${String(season).padStart(2, "0")}E${String(episode).padStart(2, "0")}`;
+  return {
+    ...parsed,
+    kind: "series" as const,
+    title: episodeTitle ? `${seriesTitle} - ${code} - ${episodeTitle}` : `${seriesTitle} - ${code}`,
+    seriesTitle,
+    episodeTitle,
+    season,
+    episode,
+  };
+}
+
+function tidyTitle(value: string) {
+  return value
+    .replace(/[._]+/g, " ")
+    .replace(/\((?:19|20)\d{2}\)/g, " ")
+    .replace(/\b(?:19|20)\d{2}\b/g, " ")
+    .replace(/\s*(?:-|–|—)\s*$/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 export function isVideoFile(name: string) {
   return VIDEO_EXT.test(name);
 }
@@ -74,21 +116,28 @@ export function isVideoFile(name: string) {
 const ACCENTS: Accent[] = ["cyan", "magenta", "violet", "amber"];
 
 export function titleFromFile(file: File, folderName: string, index: number): LibraryTitle {
-  const parsed = parseFilename(file.name);
+  const parsed = parseMediaFilename(file.webkitRelativePath || file.name);
   const id = `folder-${hash(`${folderName}:${file.name}:${file.size}`)}`;
-  const url = rememberBlob(id, file);
+  rememberBlob(id, file);
   const accent = ACCENTS[index % ACCENTS.length];
+  const seriesGenres =
+    parsed.kind === "series"
+      ? ["Home library", parsed.seriesTitle, `Season ${parsed.season}`]
+      : ["Home library", folderName];
   return {
     id,
     title: parsed.title,
-    kind: /s\d{2}e\d{2}/i.test(file.name) ? "series" : "movie",
+    kind: parsed.kind,
     year: parsed.year || "—",
     runtime: file.size > 2_000_000_000 ? "2h+" : file.size > 700_000_000 ? "~2h" : "~90m",
-    genre: "Home library",
-    genres: ["Home library", folderName],
-    synopsis: `Imported from ${folderName}. File stays on this device — CINEVO only indexes the name.`,
+    genre: parsed.kind === "series" ? parsed.seriesTitle : "Home library",
+    genres: seriesGenres,
+    synopsis:
+      parsed.kind === "series"
+        ? `Episode ${parsed.episode} from season ${parsed.season} of ${parsed.seriesTitle}. Imported from ${folderName}.`
+        : `Imported from ${folderName}. File stays on this device — CINEVO only indexes the name.`,
     cast: [],
-    director: folderName,
+    director: parsed.kind === "series" ? `Season ${parsed.season}` : folderName,
     rating: 0,
     addedAt: new Date().toISOString().slice(0, 10),
     poster: makePoster(parsed.title, accent),

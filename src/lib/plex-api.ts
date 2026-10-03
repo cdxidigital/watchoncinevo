@@ -138,7 +138,20 @@ export const plexImportSections = createServerFn({ method: "POST" })
           headers,
           12000,
         );
-        titles.push(...parsePlexMetadata(body, data.sourceLabel));
+        const rows = parsePlexMetadata(body, data.sourceLabel);
+        const shows = rows.filter((row) => row.plexType === "show" && row.ratingKey);
+        if (!shows.length) {
+          titles.push(...rows);
+          continue;
+        }
+        for (const show of shows.slice(0, 40)) {
+          const leaves = await plexJson(
+            `${data.uri}/library/metadata/${encodeURIComponent(show.ratingKey)}/allLeaves?X-Plex-Container-Start=0&X-Plex-Container-Size=200`,
+            headers,
+            12000,
+          );
+          titles.push(...parsePlexMetadata(leaves, data.sourceLabel));
+        }
       }
       const seen = new Set<string>();
       const unique = titles.filter((t) => (seen.has(t.id) ? false : (seen.add(t.id), true)));

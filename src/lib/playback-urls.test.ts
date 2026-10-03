@@ -16,7 +16,7 @@ test("plex playback is a CINEVO-side stream, not direct play", () => {
   assert.equal(url.searchParams.get("directStream"), "1");
   assert.equal(url.searchParams.get("videoQuality"), "99");
   assert.equal(url.searchParams.get("maxVideoBitrate"), "200000");
-  assert.equal(url.searchParams.get("location"), "lan");
+  assert.equal(url.searchParams.get("location"), "wan");
   assert.equal(url.searchParams.get("videoCodec"), null);
   assert.equal(url.searchParams.get("path"), "/library/metadata/99");
   assert.equal(url.searchParams.get("X-Plex-Token"), "secret-token");
@@ -28,7 +28,8 @@ test("jellyfin playback keeps the key on the server URL", () => {
   const target = jellyfinStreamTarget("http://jellyfin.example:8096", "jellyfin-abc", "jf-secret", "client-1");
   const url = new URL(target.url);
   assert.equal(url.pathname, "/Videos/abc/stream.mp4");
-  assert.equal(url.searchParams.get("static"), "true");
+  assert.equal(url.searchParams.get("Static"), "true");
+  assert.equal(url.searchParams.get("MediaSourceId"), "abc");
   assert.equal(url.searchParams.get("MaxStreamingBitrate"), "200000000");
   assert.equal(url.searchParams.get("api_key"), "jf-secret");
   assert.match(target.headers.Authorization, /Token="jf-secret"/);
@@ -57,14 +58,22 @@ test("a failed browser play can ask the server for an H.264 copy", () => {
   assert.equal(plex.searchParams.get("directStream"), "0");
   assert.equal(plex.searchParams.get("videoCodec"), "h264");
   assert.equal(plex.searchParams.get("audioCodec"), "aac");
+  assert.equal(plex.searchParams.get("container"), "mp4");
   assert.equal(plex.searchParams.get("maxVideoBitrate"), "20000");
   assert.equal(plex.searchParams.get("videoResolution"), "1920x1080");
+  assert.equal(plex.searchParams.get("subtitleStreamID"), "-1");
+  assert.equal(plex.searchParams.get("copyts"), "0");
+
+  const localPlex = new URL(plexStreamTarget("http://192.168.1.20:32400/", "plex-99", "secret-token", "client-1").url);
+  assert.equal(localPlex.searchParams.get("location"), "lan");
 
   const jellyfin = new URL(
     jellyfinStreamTarget("http://jellyfin.example:8096", "jellyfin-abc", "jf-secret", "client-1", "compatible").url,
   );
-  assert.equal(jellyfin.searchParams.get("static"), "false");
+  assert.equal(jellyfin.searchParams.get("Static"), "false");
   assert.equal(jellyfin.searchParams.get("VideoCodec"), "h264");
   assert.equal(jellyfin.searchParams.get("AudioCodec"), "aac");
+  assert.equal(jellyfin.searchParams.get("Container"), "mp4");
+  assert.equal(jellyfin.searchParams.get("TranscodingMaxAudioChannels"), "2");
   assert.equal(jellyfin.searchParams.get("MaxStreamingBitrate"), "20000000");
 });

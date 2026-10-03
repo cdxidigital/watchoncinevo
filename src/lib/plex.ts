@@ -153,22 +153,37 @@ export function parsePlexMetadata(raw: unknown, sourceLabel: string) {
     const m = item as Record<string, unknown>;
     const facts = factsFromPlex(m, String(m.ratingKey || ""));
     const genreTag = facts.genre || "Plex";
+    const type = String(m.type || "");
+    const season = Number(m.parentIndex || 0) || undefined;
+    const episode = Number(m.index || 0) || undefined;
+    const seriesTitle = String(m.grandparentTitle || "");
+    const episodeTitle = String(m.title || "Untitled");
+    const code =
+      type === "episode" && season && episode
+        ? `S${String(season).padStart(2, "0")}E${String(episode).padStart(2, "0")}`
+        : "";
     return {
       id: `plex-${m.ratingKey || m.guid || m.title}`,
       ratingKey: String(m.ratingKey || ""),
-      title: String(m.title || "Untitled"),
+      title: type === "episode" && seriesTitle ? `${seriesTitle} - ${code} - ${episodeTitle}` : episodeTitle,
       year: String(m.year || facts.year || ""),
-      kind: m.type === "show" ? ("series" as const) : ("movie" as const),
+      kind: type === "show" || type === "episode" ? ("series" as const) : ("movie" as const),
       synopsis: facts.synopsis || String(m.summary || ""),
-      genre: genreTag,
-      genres: facts.genres.length ? facts.genres : [genreTag],
+      genre: type === "episode" && seriesTitle ? seriesTitle : genreTag,
+      genres:
+        type === "episode" && seriesTitle
+          ? [seriesTitle, season ? `Season ${season}` : "Episodes", ...facts.genres].filter(Boolean)
+          : facts.genres.length
+            ? facts.genres
+            : [genreTag],
       runtime: facts.runtime,
       rating: facts.rating,
       cast: facts.cast,
-      director: facts.director,
+      director: type === "episode" && season ? `Season ${season}` : facts.director,
       posterPath: facts.posterPath,
       stillPath: facts.stillPath,
       sourceLabel,
+      plexType: type,
     };
   });
 }

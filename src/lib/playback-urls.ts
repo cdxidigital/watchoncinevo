@@ -32,6 +32,26 @@ export function serverAddressError(uri: string) {
 
 export type PlaybackFit = "original" | "compatible";
 
+function playbackLocation(uri: string) {
+  try {
+    const host = new URL(uri).hostname.toLowerCase().replace(/^\[|\]$/g, "");
+    if (
+      host === "localhost" ||
+      host === "127.0.0.1" ||
+      host === "::1" ||
+      host.endsWith(".local") ||
+      /^10\./.test(host) ||
+      /^192\.168\./.test(host) ||
+      /^172\.(1[6-9]|2\d|3[01])\./.test(host)
+    ) {
+      return "lan";
+    }
+  } catch {
+    /* fall through to wan */
+  }
+  return "wan";
+}
+
 export function plexStreamTarget(
   uri: string,
   ratingKey: string,
@@ -42,6 +62,7 @@ export function plexStreamTarget(
   const key = ratingKey.replace(/^plex-/, "").replace(/^\//, "");
   const client = clientId || "cinevo-web";
   const compatible = fit === "compatible";
+  const location = playbackLocation(uri);
   const params = new URLSearchParams({
     hasMDE: "1",
     path: `/library/metadata/${key}`,
@@ -54,7 +75,7 @@ export function plexStreamTarget(
     directStreamAudio: compatible ? "0" : "1",
     videoQuality: compatible ? "80" : "99",
     maxVideoBitrate: compatible ? "20000" : "200000",
-    location: "lan",
+    location,
     mediaBufferSize: compatible ? "10240" : "20480",
     subtitleSize: "100",
     audioBoost: "100",
@@ -71,7 +92,10 @@ export function plexStreamTarget(
   if (compatible) {
     params.set("videoCodec", "h264");
     params.set("audioCodec", "aac");
+    params.set("container", "mp4");
     params.set("videoResolution", "1920x1080");
+    params.set("subtitleStreamID", "-1");
+    params.set("copyts", "0");
   }
   return {
     url: `${uri.replace(/\/$/, "")}/video/:/transcode/universal/start.mp4?${params.toString()}`,
@@ -96,8 +120,8 @@ export function jellyfinStreamTarget(
   const client = clientId || "cinevo-web";
   const compatible = fit === "compatible";
   const params = new URLSearchParams({
-    static: compatible ? "false" : "true",
-    mediaSourceId: id,
+    Static: compatible ? "false" : "true",
+    MediaSourceId: id,
     MaxStreamingBitrate: compatible ? "20000000" : "200000000",
     api_key: token,
   });
@@ -105,6 +129,8 @@ export function jellyfinStreamTarget(
     params.set("VideoCodec", "h264");
     params.set("AudioCodec", "aac");
     params.set("Container", "mp4");
+    params.set("SubtitleMethod", "Encode");
+    params.set("TranscodingMaxAudioChannels", "2");
   }
   return {
     url: `${base.replace(/\/$/, "")}/Videos/${encodeURIComponent(id)}/stream.mp4?${params.toString()}`,

@@ -42,6 +42,7 @@
   #app {
     background: var(--color-cine-bg);
     color: var(--color-cine-text);
+    height: 100%;
     min-height: 100%;
     overflow-x: clip;
   }
@@ -54,6 +55,7 @@
     -moz-osx-font-smoothing: grayscale;
   }
   body {
+    margin: 0;
     font-family: var(--font-sans);
     font-weight: 450;
     font-optical-sizing: auto;
@@ -1109,6 +1111,7 @@ html[data-theme="paper"] .house-ambient {
   position: relative;
   z-index: 2;
   width: min(640px, 100%);
+  min-width: 0;
 }
 
 .house-kicker {
@@ -1130,6 +1133,7 @@ html[data-theme="paper"] .house-ambient {
   letter-spacing: -0.03em;
   line-height: 1.05;
   text-transform: none;
+  overflow-wrap: anywhere;
 }
 
 .house-meta {
@@ -3513,7 +3517,7 @@ html[data-theme="iris"] .cinevo-house {
   }
 
   .top-nav {
-    left: var(--rail);
+    left: calc(var(--rail) + 1.25rem);
     width: auto;
   }
 
@@ -3544,12 +3548,12 @@ html[data-theme="iris"] .cinevo-house {
   }
 
   .house-main {
-    width: calc(100% - var(--rail));
-    margin-left: var(--rail);
+    width: calc(100% - var(--rail) - 1.25rem);
+    margin-left: calc(var(--rail) + 1.25rem);
   }
 
   .house-main.house-main--page {
-    width: min(110rem, calc(100% - var(--rail)));
+    width: min(110rem, calc(100% - var(--rail) - 1.25rem));
   }
 }
 
@@ -4356,8 +4360,8 @@ html[data-tv="1"] a:focus-visible {
     z-index: 45;
   }
   .house-main {
-    width: calc(100% - var(--rail) - 8px);
-    margin-left: calc(var(--rail) + 4px);
+    width: calc(100% - var(--rail) - 1.75rem);
+    margin-left: calc(var(--rail) + 1.75rem);
   }
 }
 
@@ -4866,10 +4870,6 @@ html[data-theme="iris"] .os-card {
     padding: 1.15rem 1.1rem 1rem;
   }
 }
-
-
-
-
 
 
 

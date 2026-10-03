@@ -538,6 +538,44 @@ function prettyName(fileName) {
   return stem || fileName;
 }
 
+function tidyTitle(value) {
+  return String(value || "")
+    .replace(/[._]+/g, " ")
+    .replace(/\((?:19|20)\d{2}\)/g, " ")
+    .replace(/\b(?:19|20)\d{2}\b/g, " ")
+    .replace(/\s*(?:-|–|—)\s*$/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function parseVideoName(fileName) {
+  const title = prettyName(fileName);
+  const year = yearOf(fileName);
+  const stem = fileName.replace(VIDEO_RE, "");
+  const clean = stem.replace(/[._]+/g, " ").replace(/\s+/g, " ").trim();
+  const hit =
+    /\bS(?<season>\d{1,2})\s*E(?<episode>\d{1,3})(?:\s*(?:-|–|—)\s*(?<name>.+))?/i.exec(clean) ||
+    /\b(?<season>\d{1,2})x(?<episode>\d{1,3})(?:\s*(?:-|–|—)\s*(?<name>.+))?/i.exec(clean);
+  if (!hit || !hit.groups) return { title, year, kind: "movie" };
+  const season = Number(hit.groups.season);
+  const episode = Number(hit.groups.episode);
+  const seriesTitle = tidyTitle(clean.slice(0, hit.index).replace(/\b(?:season|series)\s*\d{1,2}\b/gi, "")) || title;
+  const episodeTitle = tidyTitle(
+    (hit.groups.name || clean.slice(hit.index + hit[0].length))
+      .replace(/\b(1080p|720p|2160p|480p|4k|uhd|hdr|bluray|webrip|web-dl|x264|x265|hevc|dts|aac|remux)\b/gi, "")
+      .replace(/\b(?:19|20)\d{2}\b/g, ""),
+  );
+  const code = `S${String(season).padStart(2, "0")}E${String(episode).padStart(2, "0")}`;
+  return {
+    title: episodeTitle ? `${seriesTitle} - ${code} - ${episodeTitle}` : `${seriesTitle} - ${code}`,
+    year,
+    kind: "series",
+    seriesTitle,
+    season,
+    episode,
+  };
+}
+
 function findSidecar(filePath) {
   const dir = path.dirname(filePath);
   const stem = path.basename(filePath).replace(VIDEO_RE, "");
@@ -574,16 +612,20 @@ function yearOf(fileName) {
 }
 
 function titleFromVideo(file) {
-  const title = prettyName(file.name);
-  const year = yearOf(file.name);
+  const parsed = parseVideoName(file.name);
   return {
     id: `node-${hashStr(file.path)}`,
-    title,
-    year,
-    kind: "movie",
-    genre: "Home video",
+    title: parsed.title,
+    year: parsed.year,
+    kind: parsed.kind,
+    genre: parsed.kind === "series" ? parsed.seriesTitle : "Home video",
+    genres: parsed.kind === "series" ? [parsed.seriesTitle, `Season ${parsed.season}`] : ["Home video"],
+    synopsis:
+      parsed.kind === "series"
+        ? `Episode ${parsed.episode} from season ${parsed.season} of ${parsed.seriesTitle}.`
+        : "",
     path: file.path,
-    poster: posterData(file.path, title, year),
+    poster: posterData(file.path, parsed.title, parsed.year),
   };
 }
 
