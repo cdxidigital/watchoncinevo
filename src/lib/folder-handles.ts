@@ -1,4 +1,4 @@
-import { isVideoFile, rememberBlob } from "./library";
+import { fileRelativePath, isVideoFile, rememberBlob } from "./library";
 
 const DB = "cinevo-fs";
 const STORE = "handles";
@@ -113,23 +113,27 @@ export async function clearFolderHandles() {
   }
 }
 
-async function walk(dir: FileSystemDirectoryHandle, out: File[], depth = 0) {
-  if (depth > 6 || out.length > 80) return;
+async function walk(dir: FileSystemDirectoryHandle, out: File[], depth = 0, prefix = "") {
+  if (depth > 8 || out.length >= 1000) return;
   // @ts-expect-error async iterator on directory handles
   for await (const entry of dir.values()) {
-    if (out.length >= 80) return;
+    if (out.length >= 1000) return;
+    const rel = prefix ? `${prefix}/${entry.name}` : entry.name;
     if (entry.kind === "file") {
       const file = await (entry as FileSystemFileHandle).getFile();
-      if (isVideoFile(file.name)) out.push(file);
+      if (isVideoFile(file.name)) {
+        Object.defineProperty(file, "cinevoRelativePath", { value: rel });
+        out.push(file);
+      }
     } else if (entry.kind === "directory") {
-      await walk(entry as FileSystemDirectoryHandle, out, depth + 1);
+      await walk(entry as FileSystemDirectoryHandle, out, depth + 1, rel);
     }
   }
 }
 
 function folderTitleId(folderName: string, file: File) {
   let h = 0;
-  const s = `${folderName}:${file.name}:${file.size}`;
+  const s = `${folderName}:${fileRelativePath(file)}:${file.size}`;
   for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
   return `folder-${h.toString(16)}`;
 }

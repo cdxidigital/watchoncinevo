@@ -161,16 +161,31 @@ const VIEWS: { id: LibraryView; label: string; icon: typeof LayoutGrid }[] = [
 ];
 
 const SORTS: { id: LibrarySort; label: string }[] = [
-  { id: "title", label: "Title" },
-  { id: "year", label: "Year" },
-  { id: "added", label: "Added" },
+  { id: "title", label: "Title A-Z" },
+  { id: "titleDesc", label: "Title Z-A" },
+  { id: "added", label: "Recently added" },
+  { id: "addedAsc", label: "Oldest added" },
+  { id: "year", label: "Newest year" },
+  { id: "yearAsc", label: "Oldest year" },
+  { id: "rating", label: "Rating" },
+  { id: "runtime", label: "Runtime" },
+  { id: "source", label: "Source" },
+  { id: "kind", label: "Type" },
 ];
 
 function sortTitles(titles: Title[], sort: LibrarySort) {
   const copy = [...titles];
   const byTitle = (a: Title, b: Title) => a.title.localeCompare(b.title, undefined, { sensitivity: "base" });
-  if (sort === "year") copy.sort((a, b) => (b.year || "").localeCompare(a.year || "") || byTitle(a, b));
+  const byNumber = (value: string) => Number(String(value || "").match(/\d+/)?.[0] || 0);
+  if (sort === "titleDesc") copy.sort((a, b) => byTitle(b, a));
+  else if (sort === "year") copy.sort((a, b) => (b.year || "").localeCompare(a.year || "") || byTitle(a, b));
+  else if (sort === "yearAsc") copy.sort((a, b) => (a.year || "").localeCompare(b.year || "") || byTitle(a, b));
   else if (sort === "added") copy.sort((a, b) => (b.addedAt || "").localeCompare(a.addedAt || "") || byTitle(a, b));
+  else if (sort === "addedAsc") copy.sort((a, b) => (a.addedAt || "").localeCompare(b.addedAt || "") || byTitle(a, b));
+  else if (sort === "rating") copy.sort((a, b) => (b.rating || 0) - (a.rating || 0) || byTitle(a, b));
+  else if (sort === "runtime") copy.sort((a, b) => byNumber(b.runtime) - byNumber(a.runtime) || byTitle(a, b));
+  else if (sort === "source") copy.sort((a, b) => (a.sourceLabel || a.source || "").localeCompare(b.sourceLabel || b.source || "") || byTitle(a, b));
+  else if (sort === "kind") copy.sort((a, b) => a.kind.localeCompare(b.kind) || byTitle(a, b));
   else copy.sort(byTitle);
   return copy;
 }

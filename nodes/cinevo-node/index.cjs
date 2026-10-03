@@ -509,8 +509,8 @@ function hashStr(s) {
 
 const VIDEO_RE = /\.(mp4|mkv|mov|avi|webm|m4v|wmv|ts|m2ts)$/i;
 
-function walkVideos(dir, acc, depth) {
-  if (depth > 6 || acc.length >= 80) return;
+function walkVideos(dir, acc, depth, root = dir) {
+  if (depth > 8 || acc.length >= 1000) return;
   let entries;
   try {
     entries = fs.readdirSync(dir, { withFileTypes: true });
@@ -518,11 +518,11 @@ function walkVideos(dir, acc, depth) {
     return;
   }
   for (const entry of entries) {
-    if (acc.length >= 80) return;
+    if (acc.length >= 1000) return;
     if (entry.name.startsWith(".")) continue;
     const full = path.join(dir, entry.name);
-    if (entry.isDirectory()) walkVideos(full, acc, depth + 1);
-    else if (VIDEO_RE.test(entry.name)) acc.push({ name: entry.name, path: full });
+    if (entry.isDirectory()) walkVideos(full, acc, depth + 1, root);
+    else if (VIDEO_RE.test(entry.name)) acc.push({ name: entry.name, path: full, relativePath: path.relative(root, full) });
   }
 }
 
@@ -549,9 +549,10 @@ function tidyTitle(value) {
 }
 
 function parseVideoName(fileName) {
-  const title = prettyName(fileName);
-  const year = yearOf(fileName);
-  const stem = fileName.replace(VIDEO_RE, "");
+  const base = path.basename(fileName);
+  const title = prettyName(base);
+  const year = yearOf(base);
+  const stem = base.replace(VIDEO_RE, "");
   const clean = stem.replace(/[._]+/g, " ").replace(/\s+/g, " ").trim();
   const hit =
     /\bS(?<season>\d{1,2})\s*E(?<episode>\d{1,3})(?:\s*(?:-|–|—)\s*(?<name>.+))?/i.exec(clean) ||
@@ -559,7 +560,10 @@ function parseVideoName(fileName) {
   if (!hit || !hit.groups) return { title, year, kind: "movie" };
   const season = Number(hit.groups.season);
   const episode = Number(hit.groups.episode);
-  const seriesTitle = tidyTitle(clean.slice(0, hit.index).replace(/\b(?:season|series)\s*\d{1,2}\b/gi, "")) || title;
+  const seriesTitle =
+    tidyTitle(clean.slice(0, hit.index).replace(/\b(?:season|series)\s*\d{1,2}\b/gi, "")) ||
+    inferSeriesTitle(fileName) ||
+    title;
   const episodeTitle = tidyTitle(
     (hit.groups.name || clean.slice(hit.index + hit[0].length))
       .replace(/\b(1080p|720p|2160p|480p|4k|uhd|hdr|bluray|webrip|web-dl|x264|x265|hevc|dts|aac|remux)\b/gi, "")
@@ -574,6 +578,18 @@ function parseVideoName(fileName) {
     season,
     episode,
   };
+}
+
+function inferSeriesTitle(fileName) {
+  const parts = String(fileName || "").split(/[\\/]/).filter(Boolean);
+  if (parts.length < 2) return "";
+  const folders = parts.slice(0, -1).map(tidyTitle).filter(Boolean);
+  for (let i = folders.length - 1; i >= 0; i -= 1) {
+    const name = folders[i];
+    if (/^(season|series)\s*\d{1,3}$/i.test(name) || /^s\d{1,3}$/i.test(name)) continue;
+    return name;
+  }
+  return "";
 }
 
 function findSidecar(filePath) {
@@ -612,7 +628,7 @@ function yearOf(fileName) {
 }
 
 function titleFromVideo(file) {
-  const parsed = parseVideoName(file.name);
+  const parsed = parseVideoName(file.relativePath || file.name);
   return {
     id: `node-${hashStr(file.path)}`,
     title: parsed.title,

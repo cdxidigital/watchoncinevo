@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Check, ChevronLeft, ListPlus, Play, Search, Star, X } from "lucide-react";
+import { Check, ChevronLeft, ListPlus, Play, Search, Star, Trash2, X } from "lucide-react";
 import { filterCatalog, similarTo, type Title } from "@/lib/catalog";
 import { libraryPool, titleById, useCinevo } from "@/lib/cinevo-store";
 import { askCinevo } from "@/lib/ask-cinevo";
@@ -335,6 +335,7 @@ export function CoreModal() {
   const setCoreOpen = useCinevo((s) => s.setCoreOpen);
   const setCoreTab = useCinevo((s) => s.setCoreTab);
   const sources = useCinevo((s) => s.sources);
+  const removeSource = useCinevo((s) => s.removeSource);
   const aiConsent = useCinevo((s) => s.aiConsent);
   const setAiConsent = useCinevo((s) => s.setAiConsent);
   const flash = useCinevo((s) => s.flash);
@@ -481,11 +482,21 @@ export function CoreModal() {
             {sources.length ? (
               <ul className="space-y-2">
                 {sources.map((s) => (
-                  <li key={s.id} className="rounded-lg bg-cine-surface px-3 py-3 font-ui text-sm">
-                    <b className="capitalize">{s.name}</b>
-                    <span className="ml-2 font-mono text-xs text-cine-faint">
-                      {s.kind} · {s.count}
+                  <li key={s.id} className="flex items-center justify-between gap-3 rounded-lg bg-cine-surface px-3 py-3 font-ui text-sm">
+                    <span className="min-w-0">
+                      <b className="block truncate capitalize">{s.name}</b>
+                      <span className="block truncate font-mono text-xs text-cine-faint">
+                        {s.kind} · {s.count} titles {s.path ? `· ${s.path}` : ""}
+                      </span>
                     </span>
+                    <button
+                      type="button"
+                      aria-label={`Remove ${s.name}`}
+                      className="flex size-10 shrink-0 items-center justify-center rounded-full text-cine-muted hover:bg-cine-well hover:text-cine-danger"
+                      onClick={() => removeSource(s.id)}
+                    >
+                      <Trash2 size={15} />
+                    </button>
                   </li>
                 ))}
               </ul>

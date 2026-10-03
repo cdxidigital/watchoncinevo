@@ -81,7 +81,10 @@ export function parseMediaFilename(fileName: string) {
   const episode = Number(episodeHit.groups.episode);
   const before = clean.slice(0, episodeHit.index).trim();
   const after = (episodeHit.groups.name || clean.slice(episodeHit.index + episodeHit[0].length)).trim();
-  const seriesTitle = tidyTitle(before.replace(/\b(?:season|series)\s*\d{1,2}\b/gi, "")) || parsed.title;
+  const seriesTitle =
+    tidyTitle(before.replace(/\b(?:season|series)\s*\d{1,2}\b/gi, "")) ||
+    inferSeriesTitle(fileName) ||
+    parsed.title;
   const episodeTitle = tidyTitle(
     after
       .replace(/\b(?:1080p|720p|2160p|480p|4k|uhd|hdr|bluray|webrip|web-dl|x264|x265|hevc|dts|aac|remux)\b/gi, "")
@@ -109,6 +112,26 @@ function tidyTitle(value: string) {
     .trim();
 }
 
+function inferSeriesTitle(fileName: string) {
+  const parts = fileName.split(/[/\\]/).filter(Boolean);
+  if (parts.length < 2) return "";
+  const folders = parts.slice(0, -1).map(tidyTitle).filter(Boolean);
+  for (let i = folders.length - 1; i >= 0; i -= 1) {
+    const name = folders[i];
+    if (/^(season|series)\s*\d{1,3}$/i.test(name) || /^s\d{1,3}$/i.test(name)) continue;
+    return name;
+  }
+  return "";
+}
+
+export function fileRelativePath(file: File) {
+  return (
+    file.webkitRelativePath ||
+    (file as File & { cinevoRelativePath?: string }).cinevoRelativePath ||
+    file.name
+  );
+}
+
 export function isVideoFile(name: string) {
   return VIDEO_EXT.test(name);
 }
@@ -116,8 +139,9 @@ export function isVideoFile(name: string) {
 const ACCENTS: Accent[] = ["cyan", "magenta", "violet", "amber"];
 
 export function titleFromFile(file: File, folderName: string, index: number): LibraryTitle {
-  const parsed = parseMediaFilename(file.webkitRelativePath || file.name);
-  const id = `folder-${hash(`${folderName}:${file.name}:${file.size}`)}`;
+  const relPath = fileRelativePath(file);
+  const parsed = parseMediaFilename(relPath);
+  const id = `folder-${hash(`${folderName}:${relPath}:${file.size}`)}`;
   rememberBlob(id, file);
   const accent = ACCENTS[index % ACCENTS.length];
   const seriesGenres =
@@ -145,18 +169,18 @@ export function titleFromFile(file: File, folderName: string, index: number): Li
     accent,
     source: "folder",
     sourceLabel: folderName,
-    path: file.name,
+    path: relPath,
   };
 }
 
 export function scanFileList(files: FileList | File[], folderName = "Home folder"): LibraryTitle[] {
-  const list = Array.from(files).filter((f) => isVideoFile(f.name) || isVideoFile(f.webkitRelativePath || ""));
+  const list = Array.from(files).filter((f) => isVideoFile(f.name) || isVideoFile(fileRelativePath(f)));
   const name = folderName || guessFolder(list) || "Home folder";
-  return list.slice(0, 80).map((file, i) => titleFromFile(file, name, i));
+  return list.slice(0, 1000).map((file, i) => titleFromFile(file, name, i));
 }
 
 function guessFolder(files: File[]) {
-  const rel = files.find((f) => f.webkitRelativePath)?.webkitRelativePath || "";
+  const rel = files.map(fileRelativePath).find((path) => path.includes("/")) || "";
   return rel.split("/")[0] || "";
 }
 

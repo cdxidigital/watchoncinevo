@@ -24,6 +24,11 @@ test("parseMediaFilename follows Plex-style episode naming", () => {
   assert.equal(x.kind, "series");
   assert.equal(x.title, "The Wire - S02E11 - Bad Dreams");
 
+  const nested = parseMediaFilename("Slow Horses/Season 03/S03E04 - Uninvited Guests.mkv");
+  assert.equal(nested.kind, "series");
+  assert.equal(nested.seriesTitle, "Slow Horses");
+  assert.equal(nested.title, "Slow Horses - S03E04 - Uninvited Guests");
+
   assert.equal(parseMediaFilename("Blade Runner (1982).mkv").kind, "movie");
 });
 

@@ -14,7 +14,17 @@ import {
 export type Room = "stage" | "browse" | "movies" | "shows" | "sidebar" | "tools";
 
 export type LibraryView = "grid" | "list" | "hybrid";
-export type LibrarySort = "title" | "year" | "added";
+export type LibrarySort =
+  | "title"
+  | "titleDesc"
+  | "year"
+  | "yearAsc"
+  | "added"
+  | "addedAsc"
+  | "rating"
+  | "runtime"
+  | "source"
+  | "kind";
 
 export type Preferences = {
   nightMode: boolean;
@@ -192,6 +202,21 @@ const DEFAULT_PREFS: Preferences = {
   libraryView: "grid",
   librarySort: "title",
 };
+
+function isLibrarySort(value: unknown): value is LibrarySort {
+  return (
+    value === "title" ||
+    value === "titleDesc" ||
+    value === "year" ||
+    value === "yearAsc" ||
+    value === "added" ||
+    value === "addedAsc" ||
+    value === "rating" ||
+    value === "runtime" ||
+    value === "source" ||
+    value === "kind"
+  );
+}
 
 const FRESH: Pick<
   CinevoState,
@@ -708,7 +733,7 @@ export const useCinevo = create<CinevoState>()(
             introSkip: clampNumber(p.prefs?.introSkip, 0, 180, 0),
             subtitleOffset: clampNumber(p.prefs?.subtitleOffset, -15, 15, 0),
             libraryView: p.prefs?.libraryView === "list" || p.prefs?.libraryView === "hybrid" ? p.prefs.libraryView : "grid",
-            librarySort: p.prefs?.librarySort === "year" || p.prefs?.librarySort === "added" ? p.prefs.librarySort : "title",
+            librarySort: isLibrarySort(p.prefs?.librarySort) ? p.prefs.librarySort : "title",
           },
         };
       },

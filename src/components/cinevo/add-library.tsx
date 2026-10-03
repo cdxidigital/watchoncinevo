@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, Cable, FolderPlus, HardDrive, Server, Trash2 } from "lucide-react";
+import { ArrowLeft, Cable, FolderPlus, HardDrive, Server } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { addNodeFolder } from "@/lib/node-client";
 import { remoteTitle, scanFileList, isVideoFile, playableCount } from "@/lib/library";
@@ -21,7 +21,6 @@ const METHODS: { id: Exclude<Method, "pick">; title: string; copy: string; icon:
 export function AddLibrary() {
   const sources = useCinevo((s) => s.sources);
   const localTitles = useCinevo((s) => s.localTitles);
-  const removeSource = useCinevo((s) => s.removeSource);
   const addFolderTitles = useCinevo((s) => s.addFolderTitles);
   const addRemoteTitles = useCinevo((s) => s.addRemoteTitles);
   const nodeUrl = useCinevo((s) => s.nodeUrl);
@@ -76,7 +75,7 @@ export function AddLibrary() {
     try {
       const handle = await picker();
       const files: File[] = [];
-      await walkDir(handle, files);
+      await walkDir(handle, files, 0, "");
       ingestFiles(files, handle.name);
       await saveFolderHandle(`src-folder-${handle.name}`, handle, handle.name);
     } catch (err) {
@@ -265,49 +264,31 @@ export function AddLibrary() {
         </div>
       ) : null}
 
-      {sources.length ? (
-        <div className="space-y-2">
-          <p className="font-ui text-xs font-semibold tracking-[0.1em] text-cine-cyan">ACTIVE SOURCES</p>
-          {sources.map((s) => (
-            <div key={s.id} className="glass flex items-center justify-between rounded-xl px-3 py-2">
-              <div>
-                <b className="font-ui capitalize">{s.name}</b>
-                <p className="font-mono text-xs text-cine-faint">
-                  {s.kind} · {s.count} titles {s.path ? `· ${s.path}` : ""}
-                </p>
-              </div>
-              <button
-                type="button"
-                aria-label={`Remove ${s.name}`}
-                className="flex size-11 items-center justify-center text-cine-muted hover:text-cine-danger"
-                onClick={() => removeSource(s.id)}
-              >
-                <Trash2 size={16} />
-              </button>
-            </div>
-          ))}
-        </div>
-      ) : (
+      {!sources.length ? (
         <p className="rounded-xl border border-dashed border-cine-border px-4 py-5 text-sm text-cine-faint">
           Nothing added yet. Import Plex, Jellyfin, a folder, or a Node path.
         </p>
-      )}
+      ) : null}
 
       {message ? <p className="text-sm text-cine-cyan">{message}</p> : null}
     </div>
   );
 }
 
-async function walkDir(dir: FileSystemDirectoryHandle, out: File[], depth = 0) {
-  if (depth > 6 || out.length > 80) return;
+async function walkDir(dir: FileSystemDirectoryHandle, out: File[], depth = 0, prefix = "") {
+  if (depth > 8 || out.length >= 1000) return;
   // @ts-expect-error async iterator on directory handles
   for await (const entry of dir.values()) {
-    if (out.length > 80) return;
+    if (out.length >= 1000) return;
+    const rel = prefix ? `${prefix}/${entry.name}` : entry.name;
     if (entry.kind === "file") {
       const file = await (entry as FileSystemFileHandle).getFile();
-      if (isVideoFile(file.name)) out.push(file);
+      if (isVideoFile(file.name)) {
+        Object.defineProperty(file, "cinevoRelativePath", { value: rel });
+        out.push(file);
+      }
     } else if (entry.kind === "directory") {
-      await walkDir(entry as FileSystemDirectoryHandle, out, depth + 1);
+      await walkDir(entry as FileSystemDirectoryHandle, out, depth + 1, rel);
     }
   }
 }
