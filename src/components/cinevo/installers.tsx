@@ -6,10 +6,11 @@ export function InstallerCards() {
     <div className="app-shelf app-shelf--grid">
       {INSTALLERS.map((item) => (
         <a key={item.id} href={item.href} download className="dl-card">
-          <img src="/node-icon.png" alt="" />
+          <img src="/node-icon.png" alt="CINEVO Server" />
           <p className="dl-card__kicker">{item.label}</p>
           <strong>{item.arch}</strong>
           <p>{item.hint}</p>
+          <small className="dl-card__meta">Signed release · Files stay local</small>
           <span className="dl-card__go">
             <Download size={16} /> Download Server
           </span>
@@ -67,10 +68,11 @@ export function PhoneApps() {
     <div className="app-shelf app-shelf--grid">
       {PHONE_APPS.map((item) => (
         <a key={item.id} href={item.href} download={item.download || undefined} className="dl-card">
-          <img src="/app-icon.png" alt="" />
+          <img src="/app-icon.png" alt={`${item.title} app`} />
           <p className="dl-card__kicker">{item.kicker}</p>
           <strong>{item.title}</strong>
           <p>{item.detail}</p>
+          {item.download ? <small className="dl-card__meta">Signed release · No store account</small> : null}
           <span className="dl-card__go">
             {item.icon === "open" ? <ArrowUpRight size={16} /> : <Download size={16} />} {item.action}
           </span>

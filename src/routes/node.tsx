@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft, CheckCircle2, Computer, KeyRound, Link2, LoaderCircle, RefreshCw, ShieldCheck, Unplug } from "lucide-react";
+import { ArrowLeft, CheckCircle2, KeyRound, Link2, LoaderCircle, RefreshCw, ShieldCheck, Unplug } from "lucide-react";
 import { useState } from "react";
 import { InstallerCards } from "@/components/cinevo/installers";
 import { checkNode, DEFAULT_NODE, nodeStatus, pairNode, revokeConnection, type NodeStatus } from "@/lib/node-client";
@@ -33,7 +33,7 @@ function NodePairing() {
 
   const pair = async () => {
     if (!code.trim()) {
-      setMessage("Enter the short code shown by CINEVO Node.");
+      setMessage("Enter the short code shown by CINEVO Server.");
       return;
     }
     setLoading(true);
@@ -90,7 +90,7 @@ function NodePairing() {
           <ArrowLeft size={18} />
           <Logo size="md" tagline={false} layout="horizontal" />
         </Link>
-        <span className="font-ui text-xs font-semibold tracking-[0.12em] text-cine-cyan">CINEVO NODE</span>
+        <span className="font-ui text-xs font-semibold tracking-[0.12em] text-cine-cyan">CINEVO SERVER</span>
       </nav>
 
       <main className="relative z-10 mx-auto max-w-6xl px-5 py-12">
@@ -138,15 +138,17 @@ function NodePairing() {
                 <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
               </button>
             </header>
-            <label className="font-ui text-xs font-medium tracking-[0.1em] text-cine-muted">LOCAL NODE ADDRESS</label>
+            <label className="font-ui text-xs font-medium tracking-[0.1em] text-cine-muted">SERVER ADDRESS</label>
             <input
               value={nodeUrl}
               onChange={(e) => setNodeUrl(e.target.value)}
               className="mt-2 h-11 w-full rounded-md border border-cine-border bg-cine-well px-3 font-mono text-sm"
               autoCapitalize="none"
               autoCorrect="off"
-              aria-label="Local Node address"
+              aria-label="CINEVO Server address"
+              placeholder="http://192.168.1.20:48184"
             />
+            <p className="mt-2 text-xs text-cine-faint">Example: http://192.168.1.20:48184. Keep this server on your home network.</p>
             <label className="mt-4 block font-ui text-xs font-medium tracking-[0.1em] text-cine-muted">PAIRING CODE</label>
             <input
               value={code}
@@ -164,12 +166,13 @@ function NodePairing() {
               className="mt-5 flex h-11 w-full items-center justify-center gap-2 rounded-md bg-cine-cyan font-ui font-bold tracking-wider text-cine-bg"
             >
               {loading ? <LoaderCircle size={16} className="animate-spin" /> : <KeyRound size={16} />}
-              Pair with CINEVO Node
+              Pair CINEVO Server
             </button>
             <p className={`mt-3 flex gap-2 text-sm ${ok ? "text-cine-lime" : "text-cine-muted"}`}>
               {ok ? <CheckCircle2 size={14} className="mt-0.5 shrink-0" /> : null}
               {message}
             </p>
+            <p className="mt-4 border-t border-cine-border pt-4 text-xs leading-relaxed text-cine-faint">Safety note: never expose this server address or port to the public internet.</p>
           </aside>
         </section>
 
