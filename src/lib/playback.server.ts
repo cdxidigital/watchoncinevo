@@ -42,7 +42,7 @@ export async function createTicket(input: {
   return { ok: true as const, src: `/api/stream/${id}` };
 }
 
-export async function loadTicket(id: string) {
+export async function loadTicket(id: string, userId: string) {
   const sql = await getSql();
   const rows = await sql<{
     url: string;
@@ -50,7 +50,7 @@ export async function loadTicket(id: string) {
     expires_at: string;
   }>`
     select url, headers, expires_at::text from cinevo_play_tickets
-    where id = ${id} and expires_at > now()
+    where id = ${id} and user_id = ${userId} and expires_at > now()
   `;
   const row = rows[0];
   if (!row) return null;

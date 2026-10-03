@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { loadTicket } from "@/lib/playback.server";
+import { getSessionUser } from "@/lib/auth/verify.server";
 
 function isVideoResponse(status: number, type: string) {
   if (status !== 200 && status !== 206) return false;
@@ -31,7 +32,9 @@ export const Route = createFileRoute("/api/stream/$ticket")({
   server: {
     handlers: {
       GET: async ({ request, params }) => {
-        const ticket = await loadTicket(params.ticket);
+        const user = await getSessionUser();
+        if (!user) return new Response("Unauthorized", { status: 401 });
+        const ticket = await loadTicket(params.ticket, user.id);
         if (!ticket) return new Response("Playback expired", { status: 410 });
         const download = new URL(request.url).searchParams.get("download") === "1";
         const range = request.headers.get("range") || "";
@@ -54,7 +57,9 @@ export const Route = createFileRoute("/api/stream/$ticket")({
         });
       },
       HEAD: async ({ request, params }) => {
-        const ticket = await loadTicket(params.ticket);
+        const user = await getSessionUser();
+        if (!user) return new Response(null, { status: 401 });
+        const ticket = await loadTicket(params.ticket, user.id);
         if (!ticket) return new Response(null, { status: 410 });
         const range = request.headers.get("range") || "";
         try {

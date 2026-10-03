@@ -17,8 +17,16 @@ export function serverAddressError(uri: string) {
     return "That server address is not allowed.";
   }
   if (url.protocol !== "http:" && url.protocol !== "https:") return "That server address is not allowed.";
-  const host = url.hostname.toLowerCase();
-  if (host === "169.254.169.254" || host === "metadata.google.internal") return "That server address is not allowed.";
+  if (url.username || url.password) return "Credentials must not be embedded in the server address.";
+  const host = url.hostname.toLowerCase().replace(/^\[|\]$/g, "");
+  const blockedHosts = new Set([
+    "169.254.169.254",
+    "metadata.google.internal",
+    "metadata.google",
+    "100.100.100.200",
+    "fd00:ec2::254",
+  ]);
+  if (blockedHosts.has(host)) return "That server address is not allowed.";
   return null;
 }
 

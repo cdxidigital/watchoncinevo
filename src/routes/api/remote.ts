@@ -32,7 +32,11 @@ export const Route = createFileRoute("/api/remote")({
         try {
           const text = await request.text();
           if (text.length > 12_000) return json({ ok: false, error: "That update is too large." }, 413);
-          body = text ? (JSON.parse(text) as Record<string, unknown>) : {};
+          const parsed = text ? JSON.parse(text) : {};
+          if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+            return json({ ok: false, error: "That request is not valid." }, 400);
+          }
+          body = parsed as Record<string, unknown>;
         } catch {
           return json({ ok: false, error: "CINEVO could not read that request." }, 400);
         }
@@ -53,9 +57,10 @@ export const Route = createFileRoute("/api/remote")({
             return json({ ok: true, commands });
           }
           if (action === "command") {
+            const id = await userId(request);
             const command = sanitizeCommand(body.command);
             if (!command) return json({ ok: false, error: "That is not a playback control." }, 400);
-            const ok = await pushRemoteCommand(String(body.code || ""), command);
+            const ok = await pushRemoteCommand(id, String(body.code || ""), command);
             if (!ok) return json({ ok: false, error: "The house is not accepting that code." }, 404);
             return json({ ok: true });
           }
