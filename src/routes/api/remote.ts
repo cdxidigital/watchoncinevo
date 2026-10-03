@@ -31,7 +31,8 @@ export const Route = createFileRoute("/api/remote")({
         }
         const code = normalizeCode(new URL(request.url).searchParams.get("code"));
         if (!code) return json({ ok: false, error: "Enter the six-character code from the house." }, 400);
-        const row = await readRemote(code);
+        const id = await userId(request);
+        const row = await readRemote(id, code);
         if (!row) return json({ ok: false, error: "That code is not active. Open CINEVO on the house and start a new one." }, 404);
         return json({ ok: true, now: row.now, ageMs: row.ageMs });
       },

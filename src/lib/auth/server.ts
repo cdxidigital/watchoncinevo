@@ -33,7 +33,7 @@ import { betterAuth } from "better-auth";
 import { bearer, genericOAuth } from "better-auth/plugins";
 import { tanstackStartCookies } from "better-auth/tanstack-start";
 import { getCookie } from "@tanstack/react-start/server";
-import { createHash, randomBytes } from "node:crypto";
+import { randomBytes } from "node:crypto";
 import { Pool } from "pg";
 import { ensureDbReady, getPglite } from "../db";
 import { emailAndPasswordEnabled } from "./email-password";
@@ -76,39 +76,13 @@ const env = (key: string): string | undefined => {
 const authDisabled = env("VITE_AUTH_ENABLED") === "false";
 
 /**
- * Production needs a stable signing secret. Prefer an explicit Better Auth /
- * Cinevo secret. On hosts that provision only DATABASE_URL (for example a
- * generic Vercel deployment), derive a domain-separated 256-bit secret from
- * that server-only database credential. This keeps sessions stable across cold
- * starts without committing a public fallback secret to the repository.
+ * Production requires a dedicated Better Auth signing secret. Never derive
+ * signing material from database credentials or provider keys because those
+ * values have different rotation and exposure boundaries.
  */
 const isProduction = process.env.NODE_ENV === "production";
-const databaseUrl =
-  env("DATABASE_URL") ??
-  env("POSTGRES_URL") ??
-  env("POSTGRES_PRISMA_URL") ??
-  env("SUPABASE_DB_URL");
-const configuredAuthSecret =
-  env("BETTER_AUTH_SECRET") ??
-  env("CINEVO_AUTH_SECRET") ??
-  env("SUPABASE_SECRET_KEY") ??
-  env("SUPABASE_SERVICE_ROLE_KEY") ??
-  env("SUPABASE_JWT_SECRET");
-const derivedDatabaseAuthSecret =
-  isProduction && !configuredAuthSecret && databaseUrl
-    ? createHash("sha256")
-        .update("cinevo:better-auth:v1\0")
-        .update(databaseUrl)
-        .digest("hex")
-    : undefined;
-const authSecret = configuredAuthSecret ?? derivedDatabaseAuthSecret;
-
-if (derivedDatabaseAuthSecret) {
-  console.warn(
-    "[auth] BETTER_AUTH_SECRET is not set; using a stable secret derived from DATABASE_URL. " +
-      "Set BETTER_AUTH_SECRET or CINEVO_AUTH_SECRET to decouple auth sessions from database credential rotation.",
-  );
-}
+const databaseUrl = env("DATABASE_URL") ?? env("POSTGRES_URL") ?? env("POSTGRES_PRISMA_URL") ?? env("SUPABASE_DB_URL");
+const authSecret = env("BETTER_AUTH_SECRET") ?? env("CINEVO_AUTH_SECRET");
 
 // Broker federation creds: the deployer injects a per-app client when deployed;
 // otherwise fall back to the shared live-preview client, which the broker accepts
@@ -176,9 +150,8 @@ const baseURL = explicitBaseURL ?? {
   // Include loopback hosts so dynamic baseURL resolves for local email/password
   // (not only the preview wildcard).
   allowedHosts: [
-    ...previewAllowedHosts,
-    "*.vercel.app",
-    "cinevo.fourtee2.digital",
+      ...previewAllowedHosts,
+      "cinevo.fourtee2.digital",
     "localhost",
     "localhost:8080",
     "127.0.0.1",

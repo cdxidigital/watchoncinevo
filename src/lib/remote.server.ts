@@ -99,13 +99,13 @@ export async function pushRemoteCommand(userId: string, code: string, command: u
   return Boolean(rows[0]);
 }
 
-export async function readRemote(code: string): Promise<{ now: RemoteNow; ageMs: number } | null> {
+export async function readRemote(userId: string, code: string): Promise<{ now: RemoteNow; ageMs: number } | null> {
   const clean = normalizeCode(code);
   if (!clean) return null;
   const sql = await getSql();
   const rows = await sql<{ now_json: unknown }>`
     select now_json from cinevo_remotes
-    where code = ${clean} and expires_at > now()
+    where code = ${clean} and user_id = ${userId} and expires_at > now()
   `;
   const row = rows[0];
   if (!row) return null;
