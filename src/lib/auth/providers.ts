@@ -1,31 +1,22 @@
 /**
- * The upstream identity providers this app offers for sign-in (via the broker).
+ * Social sign-in providers exposed by Cinevo.
  *
- * Source of truth for BOTH the server (`server.ts`, one `genericOAuth` provider
- * per entry) and the client (`client.ts` / sign-in buttons). Kept in its own
- * dependency-free module so the client can import it without pulling the
- * server-only Better Auth instance (and `pg`) into the browser bundle.
- *
- * Each app federates to the shared **auth broker** (`GROK_AUTH_ISSUER`), which
- * holds the real Google/X secrets. The app never sees them — it only knows its
- * own per-app client id/secret and which upstream to ask the broker for (`idp`).
- *
- * To add an upstream (e.g. GitHub) once the broker supports it: add one entry
- * here (`{ providerId: "grok-github", idp: "github", label: "GitHub" }`). The
- * `providerId` is this app's local id and the OAuth callback path segment
- * (`/api/auth/oauth2/callback/<providerId>`); `idp` is the hint the broker reads
- * to pick the upstream (Better Auth's id for X is still `twitter`).
+ * Production uses Better Auth's native Google / Twitter (X) providers with
+ * Cinevo-owned OAuth credentials. The legacy broker id is retained only for
+ * sandbox/live-preview popup auth, where the shared preview broker is useful.
  */
-export type GrokProvider = {
-  /** This app's local provider id; also the callback path segment. */
-  providerId: string;
-  /** Upstream hint the broker forwards to (Better Auth social id). */
+export type CinevoProvider = {
+  /** Better Auth native social provider id used in deployed Cinevo. */
+  providerId: "google" | "twitter";
+  /** Legacy broker provider id used by the sandbox popup flow only. */
+  brokerProviderId: string;
+  /** Upstream broker hint used in preview. */
   idp: string;
   /** Human label for the sign-in button. */
   label: string;
 };
 
-export const GROK_PROVIDERS: readonly GrokProvider[] = [
-  { providerId: "grok-google", idp: "google", label: "Google" },
-  { providerId: "grok-x", idp: "twitter", label: "X" },
+export const GROK_PROVIDERS: readonly CinevoProvider[] = [
+  { providerId: "google", brokerProviderId: "grok-google", idp: "google", label: "Google" },
+  { providerId: "twitter", brokerProviderId: "grok-x", idp: "twitter", label: "X" },
 ];
