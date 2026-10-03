@@ -184,17 +184,19 @@ export async function openDesk() {
 }
 
 export async function readDesk(secret: string) {
+  if (!/^[A-Za-z0-9_-]{43}$/.test(secret)) return { status: "expired" as const };
   const sql = await getSql();
-  const rows = await sql<{ status: string; token: string | null }>`
-    select status, token from cinevo_desk where secret = ${secret} and expires_at > now()
+  const rows = await sql<{ token: string }>`
+    update cinevo_desk
+    set token = null, status = 'done'
+    where secret = ${secret} and status = 'approved' and token is not null and expires_at > now()
+    returning token
   `;
-  const row = rows[0];
-  if (!row) return { status: "expired" as const };
-  if (row.status === "approved" && row.token) {
-    await sql`update cinevo_desk set token = null, status = 'done' where secret = ${secret}`;
-    return { status: "approved" as const, token: row.token };
-  }
-  return { status: "pending" as const };
+  if (rows[0]?.token) return { status: "approved" as const, token: rows[0].token };
+  const pending = await sql<{ status: string }>`
+    select status from cinevo_desk where secret = ${secret} and expires_at > now()
+  `;
+  return pending[0] ? { status: "pending" as const } : { status: "expired" as const };
 }
 
 export async function approveDesk(request: Request, secret: string) {

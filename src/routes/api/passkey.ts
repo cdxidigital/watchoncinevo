@@ -20,7 +20,10 @@ export const Route = createFileRoute("/api/passkey")({
       },
       POST: async ({ request }) => {
         const where = pageOrigin(request);
-        if (!where) return json({ error: "This page could not confirm its address. Reload and try again." }, 400);
+        const origin = request.headers.get("origin");
+        if (!where || (origin && origin !== where.origin)) {
+          return json({ error: "This page could not confirm its address. Reload and try again." }, 400);
+        }
         let body: Record<string, string> = {};
         try {
           body = (await request.json()) as Record<string, string>;
@@ -64,8 +67,8 @@ export const Route = createFileRoute("/api/passkey")({
               503,
             );
           }
-          const message = error instanceof Error ? error.message : "Passkey failed.";
-          return json({ error: message }, 400);
+          console.error("[passkey] request failed", error);
+          return json({ error: "Passkey verification failed. Try again." }, 400);
         }
       },
     },
