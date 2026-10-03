@@ -132,7 +132,9 @@ export async function signIn(
   // Open the popup SYNCHRONOUSLY on the user gesture — before any await
   // (including signOut). Awaiting first drops user-gesture privilege in some
   // browsers when the opener is a cross-origin live-preview iframe.
-  const popup = isOAuthPopup() ? openSignInPopup(providerId) : null;
+  const provider = GROK_PROVIDERS.find((item) => item.providerId === providerId);
+  if (!provider) throw new Error("Unsupported social provider.");
+  const popup = isOAuthPopup() ? openSignInPopup(provider.brokerProviderId) : null;
 
   // Clear any prior session so switching providers actually switches identity.
   // Bounded because the popup is already open — a request that never settles
@@ -169,8 +171,8 @@ export async function signIn(
     return;
   }
 
-  const { data, error } = await authClient.signIn.oauth2({
-    providerId,
+  const { data, error } = await authClient.signIn.social({
+    provider: provider.providerId,
     callbackURL,
     errorCallbackURL: opts.errorCallbackURL ?? "/login?mode=in",
   });
