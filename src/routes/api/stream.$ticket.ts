@@ -9,10 +9,18 @@ function isVideoResponse(status: number, type: string) {
   return !/xml|html|json|text\/plain/i.test(type);
 }
 
-function upstreamHeaders(ticketHeaders: Record<string, string>, range: string) {
+function isLiveTranscode(url: string) {
+  return /\/transcode\//i.test(url) || /[?&]Static=false(?:&|$)/i.test(url);
+}
+
+function upstreamHeaders(ticketHeaders: Record<string, string>, range: string, url: string) {
   const headers = new Headers(ticketHeaders);
   headers.set("Accept-Encoding", "identity");
-  if (range) headers.set("Range", range);
+  // Plex/Jellyfin live transcoders are sequential streams, not static byte-range
+  // files. Forwarding the browser's Range request can make the transcoder return
+  // 416/5xx or restart repeatedly before the <video> element can initialise.
+  if (range && !isLiveTranscode(url)) headers.set("Range", range);
+  else headers.delete("Range");
   return headers;
 }
 
@@ -29,13 +37,14 @@ async function fetchMedia(url: string, init: RequestInit) {
   throw new Error("Too many media redirects");
 }
 
-function passHeaders(upstream: Response, download: boolean) {
+function passHeaders(upstream: Response, download: boolean, liveTranscode = false) {
   const out = new Headers();
   for (const key of ["content-type", "content-length", "content-range", "accept-ranges", "content-disposition"]) {
     const value = upstream.headers.get(key);
     if (value) out.set(key, value);
   }
-  if (!out.has("Accept-Ranges")) out.set("Accept-Ranges", "bytes");
+  if (liveTranscode) out.delete("Accept-Ranges");
+  else if (!out.has("Accept-Ranges")) out.set("Accept-Ranges", "bytes");
   if (!out.has("Content-Type")) out.set("Content-Type", "video/mp4");
   out.set("Cache-Control", "private, no-transform, max-age=7200");
   if (download) out.set("Content-Disposition", 'attachment; filename="cinevo-original.mp4"');
@@ -55,7 +64,7 @@ export const Route = createFileRoute("/api/stream/$ticket")({
         let upstream: Response;
         try {
           upstream = await fetchMedia(ticket.url, {
-            headers: upstreamHeaders(ticket.headers, range),
+            headers: upstreamHeaders(ticket.headers, range, ticket.url),
           });
         } catch {
           return new Response("CINEVO could not reach that media server.", { status: 502 });
@@ -66,7 +75,7 @@ export const Route = createFileRoute("/api/stream/$ticket")({
         }
         return new Response(upstream.body, {
           status: upstream.status,
-          headers: passHeaders(upstream, download),
+          headers: passHeaders(upstream, download, isLiveTranscode(ticket.url)),
         });
       },
       HEAD: async ({ request, params }) => {
@@ -78,19 +87,22 @@ export const Route = createFileRoute("/api/stream/$ticket")({
         try {
           let upstream = await fetchMedia(ticket.url, {
             method: "HEAD",
-            headers: upstreamHeaders(ticket.headers, range),
+            headers: upstreamHeaders(ticket.headers, range, ticket.url),
           });
           if (upstream.status === 405 || upstream.status === 501) {
             upstream = await fetchMedia(ticket.url, {
               method: "GET",
-              headers: upstreamHeaders(ticket.headers, range || "bytes=0-1"),
+              headers: upstreamHeaders(ticket.headers, range || "bytes=0-1", ticket.url),
             });
             await upstream.body?.cancel();
           }
           if (upstream.status !== 200 && upstream.status !== 206) {
             return new Response(null, { status: 502 });
           }
-          return new Response(null, { status: upstream.status, headers: passHeaders(upstream, false) });
+          return new Response(null, {
+            status: upstream.status,
+            headers: passHeaders(upstream, false, isLiveTranscode(ticket.url)),
+          });
         } catch {
           return new Response(null, { status: 502 });
         }
