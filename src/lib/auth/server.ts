@@ -105,12 +105,16 @@ if (derivedDatabaseAuthSecret) {
 // otherwise fall back to the shared live-preview client, which the broker accepts
 // for any `*.grok-sandbox.com` callback (see `./preview`).
 const grokIssuer = env("GROK_AUTH_ISSUER") ?? GROK_ISSUER_DEFAULT;
-const grokClientId = env("GROK_AUTH_CLIENT_ID") ?? PREVIEW_CLIENT_ID;
-const grokClientSecret = env("GROK_AUTH_CLIENT_SECRET") ?? PREVIEW_CLIENT_SECRET;
+const grokClientId = env("GROK_AUTH_CLIENT_ID") ?? (!isProduction ? PREVIEW_CLIENT_ID : undefined);
+const grokClientSecret = env("GROK_AUTH_CLIENT_SECRET") ?? (!isProduction ? PREVIEW_CLIENT_SECRET : undefined);
 
-/** True when federated sign-in is active (real auth is enforced). */
-export const authConfigured =
-  !authDisabled && Boolean(grokClientId && grokClientSecret);
+const googleClientId = env("GOOGLE_CLIENT_ID");
+const googleClientSecret = env("GOOGLE_CLIENT_SECRET");
+const twitterClientId = env("TWITTER_CLIENT_ID") ?? env("X_CLIENT_ID");
+const twitterClientSecret = env("TWITTER_CLIENT_SECRET") ?? env("X_CLIENT_SECRET");
+
+/** Auth is active whenever Cinevo auth itself is enabled. Social providers are optional. */
+export const authConfigured = !authDisabled;
 
 /**
  * Production with auth on but no signing secret: auth is DISABLED (not made
@@ -245,12 +249,12 @@ export const SESSION_TOKEN_COOKIE = "__Host-grok-auth.session_token";
 
 // Built separately so the `betterAuth({...})` call stays easy to edit without
 // breaking brackets (models often trip on the conditional plugin spread).
-const grokOAuthPlugin = authConfigured
+const grokOAuthPlugin = grokClientId && grokClientSecret
   ? genericOAuth({
-      config: GROK_PROVIDERS.map(({ providerId, idp }) => ({
-        providerId,
-        clientId: grokClientId as string,
-        clientSecret: grokClientSecret as string,
+      config: GROK_PROVIDERS.map(({ brokerProviderId, idp }) => ({
+        providerId: brokerProviderId,
+        clientId: grokClientId,
+        clientSecret: grokClientSecret,
         // Prefer static endpoints over `discoveryUrl` so initiating (and
         // completing) OAuth does not wait on a broker discovery fetch.
         authorizationUrl: grokAuthorizationUrl,
@@ -291,7 +295,7 @@ function createAuth(secret: string) {
     accountLinking: {
       enabled: true,
       trustedProviders: [
-        ...GROK_PROVIDERS.map((p) => p.providerId),
+        ...GROK_PROVIDERS.flatMap((p) => [p.providerId, p.brokerProviderId]),
         GATE_PROVIDER_ID,
       ],
       // X's synthetic email is never "verified", so don't gate linking on the
@@ -305,6 +309,27 @@ function createAuth(secret: string) {
   // window and reduces auth flicker. See the `auth` skill for the full
   // flicker-prevention guidance (gate on `isPending`; SSR the session).
   session: { cookieCache: { enabled: true, maxAge: 300 } },
+
+  // Native production social providers. These do not depend on the Grok broker.
+  socialProviders: {
+    ...(googleClientId && googleClientSecret
+      ? {
+          google: {
+            clientId: googleClientId,
+            clientSecret: googleClientSecret,
+            prompt: "select_account" as const,
+          },
+        }
+      : {}),
+    ...(twitterClientId && twitterClientSecret
+      ? {
+          twitter: {
+            clientId: twitterClientId,
+            clientSecret: twitterClientSecret,
+          },
+        }
+      : {}),
+  },
 
   // Local email/password — toggled only via `./email-password` (not a plugin).
   ...(emailAndPasswordEnabled ? { emailAndPassword: { enabled: true } } : {}),
