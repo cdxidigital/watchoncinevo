@@ -19,7 +19,7 @@
  *     origin from the request, so real sign-in works (no demo users). Sessions
  *     and identities persist in the embedded PGLite DB (same DB as app data);
  *     the process restart wipes both. Live-preview iframe clients use a bearer
- *     token (partitioned cookies) — see `client.ts`.
+  *     token — see `client.ts`.
  *   - Off (`VITE_AUTH_ENABLED=false`, the shipped default): no providers;
  *     `requireUserId` resolves a dev user with no database configured, and
  *     throws fail-closed once `DATABASE_URL` is set (see `verify.server.ts`).
@@ -294,11 +294,10 @@ function createAuth(secret: string) {
   // Secure + the names ourselves. (Browsers allow Secure cookies on
   // `http://localhost`, so local dev still works.)
   //
-  // Do not mark OAuth transaction cookies as Partitioned. The browser sends the
-  // state/PKCE cookie to the broker during the cross-site redirect, then sends
-  // it back when the broker redirects to this app. CHIPS partitions by the
-  // current top-level site, so a partitioned transaction cookie is keyed to the
-  // broker while the callback is keyed to this app and Better Auth reports
+  // Do not mark auth cookies as Partitioned. The OAuth state/PKCE cookie is
+  // created on this app before the broker redirect and must be available again
+  // when the broker redirects back to this app. CHIPS can give the cookie a
+  // different partition during that round trip, causing Better Auth to report
   // `state_mismatch`. Preview session reads use the bearer token instead.
   advanced: {
     useSecureCookies: false,
