@@ -47,12 +47,14 @@ function parseList(raw: string): string[] {
 }
 
 function token() {
-  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
-    return crypto.randomUUID().replace(/-/g, "").slice(0, 12);
-  }
   const alphabet = "abcdefghjkmnpqrstuvwxyz23456789";
+  const bytes = new Uint8Array(24);
+  if (typeof crypto !== "undefined" && "getRandomValues" in crypto) {
+    crypto.getRandomValues(bytes);
+    return [...bytes].map((byte) => alphabet[byte % alphabet.length]).join("");
+  }
   let out = "";
-  for (let i = 0; i < 12; i++) out += alphabet[Math.floor(Math.random() * alphabet.length)];
+  for (let i = 0; i < bytes.length; i++) out += alphabet[Math.floor(Math.random() * alphabet.length)];
   return out;
 }
 
@@ -152,7 +154,19 @@ export const lookupUsername = createServerFn({ method: "POST" })
 
 export const createShare = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
-  .validator((input: { guestName: string; days: number; libraries: string[]; titles: SharedTitle[] }) => input)
+  .validator((input: unknown) => {
+    if (!input || typeof input !== "object" || Array.isArray(input)) throw new Error("Invalid share request.");
+    const value = input as Record<string, unknown>;
+    if (typeof value.guestName !== "string" || !Array.isArray(value.libraries) || !Array.isArray(value.titles)) {
+      throw new Error("Invalid share request.");
+    }
+    return {
+      guestName: value.guestName,
+      days: typeof value.days === "number" ? value.days : Number(value.days),
+      libraries: value.libraries.filter((item): item is string => typeof item === "string"),
+      titles: value.titles.filter((item): item is SharedTitle => Boolean(item && typeof item === "object")),
+    };
+  })
   .handler(async ({ data, context }) => {
     const guest = normalizeUsername(data.guestName);
     if (!USERNAME_RE.test(guest)) {
