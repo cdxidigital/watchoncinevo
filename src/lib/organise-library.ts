@@ -16,6 +16,8 @@ export type LibraryPlan = { summary: string; actions: LibraryAction[] };
 const MAX_TITLES = 300;
 const MAX_SHELVES = 40;
 const MAX_ACTIONS = 40;
+const MAX_PLANS_PER_HOUR = 10;
+const planAttempts = new Map<string, number[]>();
 const text = (max: number) => z.string().trim().min(1).max(max);
 
 const inputSchema = z.object({
@@ -70,7 +72,11 @@ function fallbackPlan(request: string, titles: z.infer<typeof inputSchema>["titl
 export const planLibrary = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
   .validator((input: unknown) => inputSchema.parse(input))
-  .handler(async ({ data }): Promise<{ ok: true; plan: LibraryPlan } | { ok: false; error: string }> => {
+  .handler(async ({ data, context }): Promise<{ ok: true; plan: LibraryPlan } | { ok: false; error: string }> => {
+    const now = Date.now();
+    const recent = (planAttempts.get(context.userId) ?? []).filter((at) => now - at < 60 * 60 * 1000);
+    if (recent.length >= MAX_PLANS_PER_HOUR) return { ok: false, error: "You have reached the organising limit. Try again later." };
+    planAttempts.set(context.userId, [...recent, now]);
     if (!data.titles.length) return { ok: false, error: "Your library is empty. Add a source first." };
 
     const titleRef = new Map(data.titles.map((t, i) => [`t${i + 1}`, t.id]));
@@ -106,7 +112,13 @@ export const planLibrary = createServerFn({ method: "POST" })
       raw = result.output;
     } catch (error) {
       console.error("[cinevo] library planner unavailable", error);
-      return { ok: true, plan: fallbackPlan(data.request, data.titles) };
+      return {
+        ok: true,
+        plan: {
+          ...fallbackPlan(data.request, data.titles),
+          summary: "The librarian is unavailable, so this is a basic local sort by genre or decade. Review it before applying.",
+        },
+      };
     }
 
     const createdNames = new Set<string>();

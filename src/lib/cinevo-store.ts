@@ -546,11 +546,13 @@ export const useCinevo = create<CinevoState>()(
         if (!label) return;
         set({
           collections: [...get().collections, { id: `col-${Date.now()}`, name: label, titleIds: [] }],
+          planUndo: null,
         });
         get().flash(`Collection "${label}" created`);
       },
       addToCollection: (collectionId, titleId) => {
         set({
+          planUndo: null,
           collections: get().collections.map((collection) =>
             collection.id === collectionId && !collection.titleIds.includes(titleId)
               ? { ...collection, titleIds: [...collection.titleIds, titleId] }
@@ -560,6 +562,7 @@ export const useCinevo = create<CinevoState>()(
       },
       removeFromCollection: (collectionId, titleId) => {
         set({
+          planUndo: null,
           collections: get().collections.map((collection) =>
             collection.id === collectionId
               ? { ...collection, titleIds: collection.titleIds.filter((id) => id !== titleId) }
@@ -568,7 +571,7 @@ export const useCinevo = create<CinevoState>()(
         });
       },
       deleteCollection: (collectionId) => {
-        set({ collections: get().collections.filter((collection) => collection.id !== collectionId) });
+        set({ collections: get().collections.filter((collection) => collection.id !== collectionId), planUndo: null });
         get().flash("Collection deleted");
       },
       applyLibraryPlan: (actions) => {
@@ -577,6 +580,7 @@ export const useCinevo = create<CinevoState>()(
         let collections = [...before.collections];
         const patches = { ...before.patches };
         const created = new Map<string, string>();
+        const existingNames = new Set(collections.map((collection) => collection.name.trim().toLowerCase()));
         const stamp = Date.now();
         const shelfId = (ref: string) => (ref.startsWith("new:") ? created.get(ref.slice(4).toLowerCase()) : ref);
         const update = (id: string | undefined, fn: (c: Collection) => Collection | null) => {
@@ -594,8 +598,11 @@ export const useCinevo = create<CinevoState>()(
         for (const action of actions) {
           const ids = "titleIds" in action ? action.titleIds.filter((id) => known.has(id)) : [];
           if (action.type === "create_shelf") {
+            const normalizedName = action.name.trim().toLowerCase();
+            if (!normalizedName || existingNames.has(normalizedName)) continue;
             const id = `col-${stamp}-${applied}`;
-            created.set(action.name.toLowerCase(), id);
+            existingNames.add(normalizedName);
+            created.set(normalizedName, id);
             collections.push({ id, name: action.name.slice(0, 40), titleIds: ids });
             applied++;
           } else if (action.type === "add_to_shelf") {
@@ -624,11 +631,12 @@ export const useCinevo = create<CinevoState>()(
         get().flash("Changes undone");
       },
       patchTitle: (id, patch) => {
-        set({ patches: { ...get().patches, [id]: { ...get().patches[id], ...patch } } });
+        set({ planUndo: null, patches: { ...get().patches, [id]: { ...get().patches[id], ...patch } } });
         get().flash("Details saved in this house");
       },
       hideTitle: (id) => {
         set({
+          planUndo: null,
           localTitles: get().localTitles.filter((title) => title.id !== id),
           remoteTitles: get().remoteTitles.filter((title) => title.id !== id),
           tonight: get().tonight.filter((titleId) => titleId !== id),
