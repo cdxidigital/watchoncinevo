@@ -59,6 +59,15 @@ export type VerifiedUser = { id: string; email: string | null };
 export async function getSessionUser(
   bearerToken?: string,
 ): Promise<VerifiedUser | null> {
+  if (process.env.CLERK_SECRET_KEY?.trim() && process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY?.trim()) {
+    try {
+      const { resolveClerkIdentity } = await import("./clerk-identity.server");
+      const clerkIdentity = await resolveClerkIdentity();
+      if (clerkIdentity) return { id: clerkIdentity.internalUserId, email: clerkIdentity.email };
+    } catch (error) {
+      console.warn("[auth] Clerk identity resolution failed; retaining Better Auth fallback", error);
+    }
+  }
   if (!authConfigured && !gateIdentityEnabled()) return null;
   // Auth is wanted but disabled for missing production config (no
   // BETTER_AUTH_SECRET): fail closed with a 503-style error, never "signed in".
