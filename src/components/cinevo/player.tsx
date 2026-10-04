@@ -221,7 +221,7 @@ export function Player() {
     return () => {
       cancelled = true;
     };
-  }, [title?.id, title?.path, title?.source, title?.sourceLabel, nodeToken, nodeUrl, plexClient, sources, fit]);
+  }, [title, nodeToken, nodeUrl, plexClient, sources, fit]);
 
   useEffect(() => {
     const video = videoRef.current;

@@ -1,4 +1,4 @@
-import type { CoreTab, Room } from "./cinevo-store";
+import type { Room } from "./cinevo-store";
 
 export const APP_ROOMS = ["movies", "shows", "library", "tools", "browse"] as const;
 export type AppRoomParam = (typeof APP_ROOMS)[number];

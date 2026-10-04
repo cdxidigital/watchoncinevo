@@ -673,17 +673,6 @@ async function fetchJson(url, headers) {
   return data;
 }
 
-async function jellyAuth(conn) {
-  if (conn.accessToken && conn.userId) return conn;
-  const data = await fetchJson(`${conn.baseUrl}/Users/AuthenticateByName`, {
-    "Content-Type": "application/json",
-    "X-Emby-Authorization":
-      'MediaBrowser Client="CINEVO", Device="Node", DeviceId="cinevo-node", Version="0.1.0"',
-  });
-  // AuthenticateByName needs POST body — handle separately
-  return conn;
-}
-
 async function jellyLogin(conn) {
   const res = await fetch(`${conn.baseUrl}/Users/AuthenticateByName`, {
     method: "POST",

@@ -4,7 +4,6 @@ import { pageOrigin, passkeyHostError } from "@/lib/passkey-crypto";
 import { AUTH_NOT_CONFIGURED_CODE, AUTH_NOT_CONFIGURED_MESSAGE } from "@/lib/auth/unavailable";
 import { isAuthNotConfiguredError } from "@/lib/auth/verify.server";
 import { passkeyRequestSchema } from "@/lib/validators";
-import type { z } from "zod";
 
 function json(body: unknown, status = 200, cookie?: string) {
   const headers = new Headers({ "content-type": "application/json", "cache-control": "no-store" });
