@@ -21,7 +21,7 @@ export async function createTicket(input: {
   const key = input.key.trim();
   const token = input.token.trim();
   if (!uri || !key || !token) return { ok: false as const, error: "Missing playback details." };
-  const blocked = serverAddressError(uri);
+  const blocked = await serverAddressError(uri);
   if (blocked) return { ok: false as const, error: blocked };
   const clientId = input.clientId || "cinevo-web";
   const fit = input.fit === "compatible" ? "compatible" : "original";
@@ -53,7 +53,7 @@ export async function loadTicket(id: string, userId: string) {
     where id = ${id} and user_id = ${userId} and expires_at > now()
   `;
   const row = rows[0];
-  if (!row || serverAddressError(row.url)) return null;
+  if (!row || (await serverAddressError(row.url))) return null;
   let headers: Record<string, string> = {};
   try {
     headers = (typeof row.headers === "string" ? JSON.parse(row.headers) : row.headers) as Record<string, string>;

@@ -44,6 +44,13 @@
     color: var(--color-cine-text);
     min-height: 100%;
     overflow-x: clip;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  html::-webkit-scrollbar,
+  body::-webkit-scrollbar,
+  #app::-webkit-scrollbar {
+    display: none;
   }
   html {
     font-size: clamp(16px, 14.5px + 0.32vw, 18.5px);
@@ -2861,17 +2868,22 @@ html[data-theme="paper"] .house-ambient {
     background: linear-gradient(180deg, rgb(5 5 5 / 88%) 0%, rgb(5 5 5 / 55%) 70%, transparent 100%);
   }
   .public-nav nav {
-    display: flex;
-    gap: 14px;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0;
     min-width: 0;
-    overflow-x: auto;
+    width: 100%;
   }
   .public-nav nav a {
     display: inline-flex;
-    min-height: 44px;
+    min-height: 40px;
+    min-width: 0;
     align-items: center;
-    font-size: 14px;
+    justify-content: center;
+    overflow: hidden;
+    font-size: clamp(0.7rem, 3.1vw, 0.875rem);
     white-space: nowrap;
+    text-overflow: ellipsis;
   }
   .public-nav__signin { display: none; }
   .public-hero { min-height: 100svh; align-items: flex-end; padding: 148px 20px 36px; }
