@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { authMiddleware } from "@/lib/auth/middleware";
 
 type CatalogRow = {
   title: string;
@@ -10,9 +11,28 @@ type CatalogRow = {
 };
 
 export const askCinevo = createServerFn({ method: "POST" })
-  .validator((input: { question: string; titles?: CatalogRow[] }) => input)
+  .middleware([authMiddleware])
+  .validator((input: { question: string; titles?: CatalogRow[] }) => {
+    if (!input || typeof input.question !== "string" || input.question.length > 400) {
+      throw new Error("Invalid concierge request");
+    }
+    if (input.titles && (!Array.isArray(input.titles) || input.titles.length > 80)) {
+      throw new Error("Invalid catalog");
+    }
+    for (const title of input.titles ?? []) {
+      if (!title || typeof title.title !== "string" || title.title.length > 200 ||
+        typeof title.synopsis !== "string" || title.synopsis.length > 1000 ||
+        typeof title.year !== "string" || title.year.length > 20 ||
+        typeof title.kind !== "string" || title.kind.length > 40 ||
+        typeof title.genre !== "string" || title.genre.length > 200 ||
+        typeof title.rating !== "number" || !Number.isFinite(title.rating)) {
+        throw new Error("Invalid catalog");
+      }
+    }
+    return input;
+  })
   .handler(async ({ data }) => {
-    const question = data.question.trim().slice(0, 400);
+    const question = data.question.trim();
     if (!question) return { ok: false as const, error: "Ask something first." };
 
     const titles = data.titles ?? [];
@@ -36,7 +56,12 @@ export const askCinevo = createServerFn({ method: "POST" })
       };
     }
 
-    const res = await fetch("https://api.x.ai/v1/chat/completions", {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15_000);
+    let res: Response;
+    try {
+      res = await fetch("https://api.x.ai/v1/chat/completions", {
+      signal: controller.signal,
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -57,7 +82,12 @@ export const askCinevo = createServerFn({ method: "POST" })
           },
         ],
       }),
-    });
+      });
+    } catch {
+      return { ok: false as const, error: "Concierge is offline right now." };
+    } finally {
+      clearTimeout(timeout);
+    }
     if (!res.ok) return { ok: false as const, error: "Concierge is offline right now." };
     const body = (await res.json()) as { choices?: { message?: { content?: string } }[] };
     return { ok: true as const, text: body.choices?.[0]?.message?.content ?? "Nothing tonight." };

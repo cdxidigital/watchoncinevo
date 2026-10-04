@@ -251,9 +251,22 @@ function streamFile(req, res, filePath) {
   if (range) {
     const m = /^bytes=(\d*)-(\d*)$/.exec(range);
     if (m) {
-      let start = m[1] ? Number(m[1]) : 0;
-      let end = m[2] ? Number(m[2]) : size - 1;
-      if (!Number.isFinite(start) || !Number.isFinite(end) || start >= size || start < 0) {
+      let start;
+      let end;
+      if (m[1] === "") {
+        const suffixLength = Number(m[2]);
+        if (!Number.isInteger(suffixLength) || suffixLength <= 0) {
+          res.writeHead(416, { ...extra, "Content-Range": `bytes */${size}` });
+          res.end();
+          return;
+        }
+        start = Math.max(0, size - suffixLength);
+        end = size - 1;
+      } else {
+        start = Number(m[1]);
+        end = m[2] ? Number(m[2]) : size - 1;
+      }
+      if (!Number.isInteger(start) || !Number.isInteger(end) || start < 0 || end < start || start >= size) {
         res.writeHead(416, { ...extra, "Content-Range": `bytes */${size}` });
         res.end();
         return;
