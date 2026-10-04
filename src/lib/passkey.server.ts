@@ -11,6 +11,20 @@ type PasskeyRow = {
   counter: number;
 };
 
+/**
+ * Thrown for the known, user-facing passkey failure modes below. The route
+ * handler shows `error.message` to the browser ONLY for this class — any other
+ * thrown error (DB outage, a crypto library throwing something unexpected,
+ * etc.) gets a generic message instead, so internal details never leak to the
+ * client while still being logged server-side for debugging.
+ */
+export class PasskeyUserError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "PasskeyUserError";
+  }
+}
+
 function configuredAuth() {
   if (!auth) throw new AuthNotConfiguredError();
   return auth;
@@ -93,15 +107,15 @@ export async function registerPasskey(request: Request, body: {
   signature?: string;
 }) {
   const where = pageOrigin(request);
-  if (!where) throw new Error("This page could not confirm its address. Reload and try again.");
+  if (!where) throw new PasskeyUserError("This page could not confirm its address. Reload and try again.");
   const email = (body.email || "").trim().toLowerCase();
   const name = (body.name || "").trim() || email.split("@")[0] || "Member";
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error("Enter the email for this house.");
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new PasskeyUserError("Enter the email for this house.");
   if (!body.challengeId || !body.credentialId || !body.publicKey || !body.clientDataJSON || !body.authenticatorData || !body.signature) {
-    throw new Error("Passkey response was incomplete.");
+    throw new PasskeyUserError("Passkey response was incomplete.");
   }
   const challenge = await takeChallenge(body.challengeId);
-  if (!challenge) throw new Error("That passkey prompt expired. Try again.");
+  if (!challenge) throw new PasskeyUserError("That passkey prompt expired. Try again.");
   const algorithm = Number(body.algorithm) === -257 ? -257 : -7;
   await verifyAssertion({
     publicKeySpki: b64urlToBytes(body.publicKey),
@@ -119,17 +133,22 @@ export async function registerPasskey(request: Request, body: {
   let userId = "";
   if (existing?.user) {
     if (!signedIn || signedIn !== existing.user.id) {
-      throw new Error("That email already has a house. Sign in, then add a passkey.");
+      throw new PasskeyUserError("That email already has a house. Sign in, then add a passkey.");
     }
     userId = existing.user.id;
   } else {
-    const user = await ctx.internalAdapter.createUser({ email, name, emailVerified: true });
-    if (!user?.id) throw new Error("Could not create that account.");
+    // `emailVerified: false` — a passkey only proves possession of the
+    // authenticator, never ownership of the typed-in email. Marking it
+    // verified here would let anyone claim another person's address and have
+    // it treated as verified, including by the Clerk identity mapping (which
+    // only links accounts with a verified email).
+    const user = await ctx.internalAdapter.createUser({ email, name, emailVerified: false });
+    if (!user?.id) throw new PasskeyUserError("Could not create that account.");
     userId = user.id;
   }
   const sql = await getSql();
   const taken = await sql<{ user_id: string }>`select user_id from cinevo_passkey where credential_id = ${body.credentialId}`;
-  if (taken[0] && taken[0].user_id !== userId) throw new Error("That passkey is already on another house.");
+  if (taken[0] && taken[0].user_id !== userId) throw new PasskeyUserError("That passkey is already on another house.");
   if (!taken[0]) {
     await sql`
       insert into cinevo_passkey (credential_id, user_id, public_key, algorithm, counter)
@@ -147,16 +166,16 @@ export async function loginPasskey(request: Request, body: {
   signature?: string;
 }) {
   const where = pageOrigin(request);
-  if (!where) throw new Error("This page could not confirm its address. Reload and try again.");
+  if (!where) throw new PasskeyUserError("This page could not confirm its address. Reload and try again.");
   if (!body.challengeId || !body.credentialId || !body.clientDataJSON || !body.authenticatorData || !body.signature) {
-    throw new Error("Passkey response was incomplete.");
+    throw new PasskeyUserError("Passkey response was incomplete.");
   }
   const challenge = await takeChallenge(body.challengeId);
-  if (!challenge) throw new Error("That passkey prompt expired. Try again.");
+  if (!challenge) throw new PasskeyUserError("That passkey prompt expired. Try again.");
   const sql = await getSql();
   const rows = await sql<PasskeyRow>`select credential_id, user_id, public_key, algorithm, counter from cinevo_passkey where credential_id = ${body.credentialId}`;
   const row = rows[0];
-  if (!row) throw new Error("No passkey on this house matches that one. Create an account first.");
+  if (!row) throw new PasskeyUserError("No passkey on this house matches that one. Create an account first.");
   const verified = await verifyAssertion({
     publicKeySpki: b64urlToBytes(row.public_key),
     algorithm: Number(row.algorithm) === -257 ? -257 : -7,
@@ -169,7 +188,7 @@ export async function loginPasskey(request: Request, body: {
   });
   const next = verified.signCount > Number(row.counter) ? verified.signCount : Number(row.counter);
   if (verified.signCount > 0 && Number(row.counter) > 0 && verified.signCount <= Number(row.counter)) {
-    throw new Error("That passkey looks copied. Use the original device.");
+    throw new PasskeyUserError("That passkey looks copied. Use the original device.");
   }
   await sql`update cinevo_passkey set counter = ${next} where credential_id = ${row.credential_id}`;
   return issueSession(row.user_id);
@@ -199,10 +218,10 @@ export async function readDesk(secret: string) {
 
 export async function approveDesk(request: Request, secret: string) {
   const userId = await userFromRequest(request);
-  if (!userId) throw new Error("Sign in on this phone first.");
+  if (!userId) throw new PasskeyUserError("Sign in on this phone first.");
   const sql = await getSql();
   const rows = await sql<{ status: string }>`select status from cinevo_desk where secret = ${secret} and expires_at > now()`;
-  if (!rows[0] || rows[0].status === "done") throw new Error("That code expired. Scan a new one.");
+  if (!rows[0] || rows[0].status === "done") throw new PasskeyUserError("That code expired. Scan a new one.");
   const session = await issueSession(userId);
   await sql`update cinevo_desk set status = 'approved', token = ${session.token} where secret = ${secret}`;
   return { ok: true as const };
