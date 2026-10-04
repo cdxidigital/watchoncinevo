@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Check, ChevronLeft, ListPlus, Play, Search, Star, X } from "lucide-react";
+import { Bot, Check, ChevronLeft, ListPlus, Play, Search, Star, X } from "lucide-react";
 import { filterCatalog, similarTo, type Title } from "@/lib/catalog";
 import { libraryPool, titleById, useCinevo } from "@/lib/cinevo-store";
 import { askCinevo } from "@/lib/ask-cinevo";
@@ -381,18 +381,22 @@ export function CoreModal() {
     return (
       <div className="ask-scrim" onMouseDown={() => setCoreOpen(false)}>
         <section className="ask-panel" onMouseDown={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label="Ask CINEVO">
-          <header className="mb-4 flex items-start justify-between gap-3">
-            <div>
-              <p className="font-ui text-xs font-semibold tracking-[0.14em] text-cine-cyan">ASK</p>
-              <h2 className="font-ui text-2xl font-semibold tracking-tight">
-                {mode === "watch" ? "What should we watch?" : "Arrange your library"}
-              </h2>
+          <header className="ask-panel__header">
+            <div className="ask-panel__identity">
+              <span className="ask-panel__mark" aria-hidden="true"><Bot size={17} /></span>
+              <div>
+                <p className="ask-panel__eyebrow">CINEVO CONCIERGE</p>
+                <h2 className="ask-panel__title">
+                  {mode === "watch" ? "What should we watch?" : "Arrange your library"}
+                </h2>
+                <p className="ask-panel__subline">A quiet recommendation from your private house.</p>
+              </div>
             </div>
-            <button type="button" aria-label="Close Ask" className="top-nav__icon" onClick={() => setCoreOpen(false)}>
+            <button type="button" aria-label="Close Ask" className="ask-panel__close" onClick={() => setCoreOpen(false)}>
               <X size={18} />
             </button>
           </header>
-          <label className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+          <label className="ask-panel__consent">
             <span>
               <b className="block font-ui text-sm">Private metadata assistance</b>
               <small className="text-cine-faint">Only titles already in this house</small>
@@ -429,7 +433,7 @@ export function CoreModal() {
                   <button
                     key={p.label}
                     type="button"
-                    className="h-11 rounded-full border border-white/10 bg-white/5 px-4 font-ui text-sm"
+                    className="ask-preset"
                     onClick={() => setQuestion(p.q)}
                   >
                     {p.label}
@@ -441,7 +445,7 @@ export function CoreModal() {
                 onChange={(e) => setQuestion(e.target.value)}
                 maxLength={400}
                 placeholder="What should I watch tonight?"
-                className="h-28 w-full rounded-2xl border border-white/10 bg-black/30 p-3 font-ui"
+                className="ask-panel__input"
               />
               <button
                 type="button"
@@ -451,7 +455,7 @@ export function CoreModal() {
               >
                 {pending ? "Thinking…" : "Ask CINEVO"}
               </button>
-              {answer ? <p className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm leading-relaxed text-cine-muted">{answer}</p> : null}
+              {answer ? <p className="ask-panel__answer rounded-xl border p-4 text-sm leading-relaxed text-cine-muted">{answer}</p> : null}
             </div>
           ) : (
             <p className="mt-4 text-sm text-cine-faint">Turn consent on to ask about titles in this house. Nothing leaves until you do.</p>
