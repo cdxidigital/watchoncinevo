@@ -9,6 +9,7 @@ import { HouseRemote, InstallCinevo } from "./house-remote";
 import { Link } from "@tanstack/react-router";
 import { THEMES } from "@/lib/library";
 import { SharePanel } from "./share-panel";
+import { OrganisePanel } from "./organise-panel";
 import { getMyProfile } from "@/lib/sharing";
 
 const AI_PRESETS = [
@@ -341,6 +342,7 @@ export function CoreModal() {
   const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState("");
   const [pending, setPending] = useState(false);
+  const [mode, setMode] = useState<"watch" | "organise">("watch");
   const [profile, setProfile] = useState<{ username: string; xp: number; streak: number } | null>(null);
   useEffect(() => {
     if (!open) return;
@@ -381,7 +383,9 @@ export function CoreModal() {
           <header className="mb-4 flex items-start justify-between gap-3">
             <div>
               <p className="font-ui text-xs font-semibold tracking-[0.14em] text-cine-cyan">ASK</p>
-              <h2 className="font-ui text-2xl font-semibold tracking-tight">What should we watch?</h2>
+              <h2 className="font-ui text-2xl font-semibold tracking-tight">
+                {mode === "watch" ? "What should we watch?" : "Arrange your library"}
+              </h2>
             </div>
             <button type="button" aria-label="Close Ask" className="top-nav__icon" onClick={() => setCoreOpen(false)}>
               <X size={18} />
@@ -400,6 +404,24 @@ export function CoreModal() {
             />
           </label>
           {aiConsent ? (
+            <div role="tablist" aria-label="Concierge mode" className="mt-4 flex gap-1 rounded-full border border-white/10 bg-white/5 p-1">
+              {(["watch", "organise"] as const).map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  role="tab"
+                  aria-selected={mode === m}
+                  onClick={() => setMode(m)}
+                  className={`h-10 flex-1 rounded-full font-ui text-sm ${mode === m ? "bg-cine-cyan text-cine-bg" : "text-cine-muted"}`}
+                >
+                  {m === "watch" ? "Watch" : "Organise"}
+                </button>
+              ))}
+            </div>
+          ) : null}
+          {aiConsent && mode === "organise" ? (
+            <OrganisePanel />
+          ) : aiConsent ? (
             <div className="mt-4 space-y-3">
               <div className="flex flex-wrap gap-2">
                 {AI_PRESETS.map((p) => (
