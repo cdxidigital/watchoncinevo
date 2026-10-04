@@ -287,15 +287,22 @@ function createAuth(secret: string) {
   ...(emailAndPasswordEnabled ? { emailAndPassword: { enabled: true } } : {}),
 
   // `__Host-` prefixed cookies: the browser REFUSES any same-named cookie that
-  // carries a `Domain` attribute, so a sibling `*.grok.me` app cannot "toss" a
-  // `Domain=.grok.me` session cookie onto this app. `__Host-` requires Secure +
+  // carries a `Domain` attribute, so a sibling `*.grok.me` app cannot "toss"
+  // a `Domain=.grok.me` session cookie onto this app. `__Host-` requires Secure +
   // Path=/ + no Domain; Better Auth otherwise uses `__Secure-` (which permits
   // Domain), so we drop its auto prefix (`useSecureCookies: false`) and set
   // Secure + the names ourselves. (Browsers allow Secure cookies on
   // `http://localhost`, so local dev still works.)
+  //
+  // Do not mark OAuth transaction cookies as Partitioned. The browser sends the
+  // state/PKCE cookie to the broker during the cross-site redirect, then sends
+  // it back when the broker redirects to this app. CHIPS partitions by the
+  // current top-level site, so a partitioned transaction cookie is keyed to the
+  // broker while the callback is keyed to this app and Better Auth reports
+  // `state_mismatch`. Preview session reads use the bearer token instead.
   advanced: {
     useSecureCookies: false,
-    defaultCookieAttributes: { secure: true, sameSite: "none", partitioned: true, path: "/" },
+    defaultCookieAttributes: { secure: true, sameSite: "none", path: "/" },
     cookies: {
       session_token: { name: SESSION_TOKEN_COOKIE },
       session_data: { name: "__Host-grok-auth.session_data" },
