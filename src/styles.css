@@ -44,6 +44,13 @@
     color: var(--color-cine-text);
     min-height: 100%;
     overflow-x: clip;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  html::-webkit-scrollbar,
+  body::-webkit-scrollbar,
+  #app::-webkit-scrollbar {
+    display: none;
   }
   html {
     font-size: clamp(16px, 14.5px + 0.32vw, 18.5px);
