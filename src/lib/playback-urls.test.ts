@@ -43,12 +43,12 @@ test("node playback does not put the pairing token in the URL", () => {
   assert.equal(target.headers.Authorization, "Bearer pair-token");
 });
 
-test("loopback and blocked addresses", () => {
+test("loopback and blocked addresses", async () => {
   assert.equal(isLoopbackUrl("http://127.0.0.1:48184"), true);
   assert.equal(isLoopbackUrl("https://plex.example:32400"), false);
-  assert.equal(serverAddressError("file:///etc/passwd"), "That server address is not allowed.");
-  assert.equal(serverAddressError("http://169.254.169.254/"), "That server address is not allowed.");
-  assert.equal(serverAddressError("http://192.168.1.20:32400"), null);
+  assert.equal(await serverAddressError("file:///etc/passwd"), "That server address is not allowed.");
+  assert.equal(await serverAddressError("http://169.254.169.254/"), "That server address is not allowed.");
+  assert.equal(await serverAddressError("http://192.168.1.20:32400"), null);
 });
 
 test("a failed browser play can ask the server for an H.264 copy", () => {

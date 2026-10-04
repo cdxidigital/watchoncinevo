@@ -19,7 +19,7 @@ function upstreamHeaders(ticketHeaders: Record<string, string>, range: string) {
 async function fetchMedia(url: string, init: RequestInit) {
   let current = url;
   for (let redirects = 0; redirects <= 3; redirects += 1) {
-    if (serverAddressError(current)) throw new Error("Blocked media address");
+    if (await serverAddressError(current)) throw new Error("Blocked media address");
     const response = await fetch(current, { ...init, redirect: "manual" });
     if (response.status < 300 || response.status >= 400) return response;
     const location = response.headers.get("location");

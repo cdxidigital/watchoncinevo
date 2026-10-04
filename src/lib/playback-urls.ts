@@ -9,24 +9,43 @@ export function isLoopbackUrl(url?: string) {
 }
 
 /** Reject schemes and cloud-metadata hosts. Private LAN addresses stay allowed. */
-export function serverAddressError(uri: string) {
+import { lookup } from "node:dns/promises";
+import { isIP } from "node:net";
+
+const ADDRESS_ERROR = "That server address is not allowed.";
+
+function isBlockedAddress(address: string) {
+  const normalized = address.toLowerCase().replace(/^\[|\]$/g, "");
+  if (isIP(normalized) === 4) {
+    const octets = normalized.split(".").map(Number);
+    return (
+      octets[0] === 127 ||
+      octets[0] === 169 && octets[1] === 254 ||
+      octets[0] === 100 && octets[1] >= 64 && octets[1] <= 127
+    );
+  }
+  return normalized === "::1" || normalized === "fd00:ec2::254" || normalized.startsWith("fe80:") || normalized.startsWith("fd");
+}
+
+/** Validate the resolved destination too, preventing DNS names from bypassing metadata protection. */
+export async function serverAddressError(uri: string) {
   let url: URL;
   try {
     url = new URL(uri);
   } catch {
-    return "That server address is not allowed.";
+    return ADDRESS_ERROR;
   }
-  if (url.protocol !== "http:" && url.protocol !== "https:") return "That server address is not allowed.";
+  if (url.protocol !== "http:" && url.protocol !== "https:") return ADDRESS_ERROR;
   if (url.username || url.password) return "Credentials must not be embedded in the server address.";
+
   const host = url.hostname.toLowerCase().replace(/^\[|\]$/g, "");
-  const blockedHosts = new Set([
-    "169.254.169.254",
-    "metadata.google.internal",
-    "metadata.google",
-    "100.100.100.200",
-    "fd00:ec2::254",
-  ]);
-  if (blockedHosts.has(host)) return "That server address is not allowed.";
+  if (isBlockedAddress(host)) return ADDRESS_ERROR;
+  try {
+    const addresses = isIP(host) ? [host] : (await lookup(host, { all: true })).map(({ address }) => address);
+    if (addresses.some(isBlockedAddress)) return ADDRESS_ERROR;
+  } catch {
+    return "That server address could not be resolved.";
+  }
   return null;
 }
 
