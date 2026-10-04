@@ -5,6 +5,7 @@ import { libraryPool, titleById, useCinevo } from "@/lib/cinevo-store";
 import { askCinevo } from "@/lib/ask-cinevo";
 import { Rail, ArtImage } from "./poster";
 import { InstallerCards } from "./installers";
+import { AddLibrary } from "./add-library";
 import { HouseRemote, InstallCinevo } from "./house-remote";
 import { Link } from "@tanstack/react-router";
 import { THEMES } from "@/lib/library";
@@ -512,16 +513,26 @@ export function CoreModal() {
                 ))}
               </ul>
             ) : null}
-            <button
-              type="button"
-              className="h-11 rounded-md bg-cine-cyan px-5 font-ui font-bold text-cine-bg"
-              onClick={() => {
-                setCoreOpen(false);
-                useCinevo.getState().setRoom("sidebar");
-              }}
-            >
-              Open Library
-            </button>
+            <section aria-labelledby="core-add-source-heading">
+              <p className="font-ui text-xs font-semibold tracking-[0.1em] text-cine-cyan">ADD A SOURCE</p>
+              <h3 id="core-add-source-heading" className="mt-1 font-ui text-lg font-semibold">
+                Bring your shelves together
+              </h3>
+              <p className="mt-1 mb-3 text-sm text-cine-muted">Choose a connection below. You can add more than one.</p>
+              <AddLibrary />
+            </section>
+            {sources.length ? (
+              <button
+                type="button"
+                className="h-11 rounded-md bg-cine-surface px-5 font-ui font-bold text-cine-text"
+                onClick={() => {
+                  setCoreOpen(false);
+                  useCinevo.getState().setRoom("sidebar");
+                }}
+              >
+                View your collection
+              </button>
+            ) : null}
             <div>
               <p className="font-ui text-xs font-semibold tracking-[0.1em] text-cine-cyan">NODE INSTALLERS</p>
               <p className="mt-1 mb-3 text-sm text-cine-muted">

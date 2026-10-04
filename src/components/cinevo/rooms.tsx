@@ -15,7 +15,6 @@ import { mostPlayed, tasteFrom } from "@/lib/house-tools";
 import { isLoopbackUrl } from "@/lib/playback-urls";
 import { useLibrary } from "@/lib/use-library";
 import { Rail, ArtImage, LibraryBoard } from "./poster";
-import { AddLibrary } from "./add-library";
 import { ToolsRoom } from "./tools-room";
 import { BrandKicker } from "./logo";
 
@@ -508,6 +507,7 @@ export function BrowseRoom({ kind: initialKind = "all" }: { kind?: "all" | "movi
 export function SidebarRoom() {
   const local = useCinevo((s) => s.localTitles);
   const remote = useCinevo((s) => s.remoteTitles);
+  const setCoreOpen = useCinevo((s) => s.setCoreOpen);
   const yours = [...local, ...remote];
   return (
     <div className="house-page house-page--flow library-room">
@@ -531,9 +531,11 @@ export function SidebarRoom() {
             <p className="house-kicker">ADD A SOURCE</p>
             <h2 id="library-connect-heading">Bring your shelves together</h2>
           </div>
-          <p>Choose a connection below. You can add more than one.</p>
+          <p>Sources are managed in Core. You can add more than one.</p>
         </div>
-        <AddLibrary />
+        <button type="button" className="house-btn house-btn--play h-11" onClick={() => setCoreOpen(true, "libraries")}>
+          <Plus size={16} aria-hidden="true" /> Add a source in Core
+        </button>
       </section>
       {yours.length ? (
         <section className="library-room__collection" aria-labelledby="library-collection-heading">
