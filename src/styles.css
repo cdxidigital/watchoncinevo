@@ -3560,9 +3560,12 @@ html[data-theme="iris"] .cinevo-house {
     margin-left: var(--rail);
   }
 
-  .house-main.house-main--page {
-    width: min(110rem, calc(100% - var(--rail)));
+.house-main.house-main--page {
+  width: min(110rem, calc(100% - var(--rail)));
+  max-width: calc(100% - var(--rail));
+  box-sizing: border-box;
   }
+
 }
 
 /* ── glass chrome + motion ── */

@@ -9,14 +9,15 @@ export function isLoopbackUrl(url?: string) {
 }
 
 /** Reject schemes and cloud-metadata hosts. Private LAN addresses stay allowed. */
-import { lookup } from "node:dns/promises";
-import { isIP } from "node:net";
-
 const ADDRESS_ERROR = "That server address is not allowed.";
+
+function isIpAddress(address: string) {
+  return /^(?:\d{1,3}\.){3}\d{1,3}$/.test(address) || address.includes(":");
+}
 
 function isBlockedAddress(address: string) {
   const normalized = address.toLowerCase().replace(/^\[|\]$/g, "");
-  if (isIP(normalized) === 4) {
+  if (/^(?:\d{1,3}\.){3}\d{1,3}$/.test(normalized)) {
     const octets = normalized.split(".").map(Number);
     return (
       octets[0] === 127 ||
@@ -29,6 +30,7 @@ function isBlockedAddress(address: string) {
 
 /** Validate the resolved destination too, preventing DNS names from bypassing metadata protection. */
 export async function serverAddressError(uri: string) {
+  const [{ lookup }, { isIP }] = await Promise.all([import("node:dns/promises"), import("node:net")]);
   let url: URL;
   try {
     url = new URL(uri);
@@ -41,7 +43,7 @@ export async function serverAddressError(uri: string) {
   const host = url.hostname.toLowerCase().replace(/^\[|\]$/g, "");
   if (isBlockedAddress(host)) return ADDRESS_ERROR;
   try {
-    const addresses = isIP(host) ? [host] : (await lookup(host, { all: true })).map(({ address }) => address);
+    const addresses = isIpAddress(host) ? [host] : (await lookup(host, { all: true })).map(({ address }) => address);
     if (addresses.some(isBlockedAddress)) return ADDRESS_ERROR;
   } catch {
     return "That server address could not be resolved.";

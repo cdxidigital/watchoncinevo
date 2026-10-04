@@ -5,6 +5,7 @@ import type { LibSource, LibraryTitle, ThemeId } from "./library";
 import { makePoster, migrateTheme } from "./library";
 import type { Collection, Marker, PlayLog, TitlePatch } from "./house-tools";
 import type { PlexServer } from "./plex";
+import type { LibraryAction } from "./organise-library";
 import {
   DEFAULT_DASHBOARD_WIDGETS,
   sanitizeDashboardWidgets,
@@ -156,6 +157,9 @@ type CinevoState = {
   addToCollection: (collectionId: string, titleId: string) => void;
   removeFromCollection: (collectionId: string, titleId: string) => void;
   deleteCollection: (collectionId: string) => void;
+  planUndo: { collections: Collection[]; patches: Record<string, TitlePatch> } | null;
+  applyLibraryPlan: (actions: LibraryAction[]) => number;
+  undoLibraryPlan: () => void;
   patchTitle: (id: string, patch: TitlePatch) => void;
   hideTitle: (id: string) => void;
   patchArtwork: (
@@ -295,6 +299,7 @@ export const useCinevo = create<CinevoState>()(
       markers: [],
       plays: [],
       patches: {},
+      planUndo: null,
       setRoom: (room) => set({ room, selectedId: null }),
       openTitle: (id) => set({ selectedId: id }),
       closeTitle: () => set({ selectedId: null }),
@@ -541,11 +546,13 @@ export const useCinevo = create<CinevoState>()(
         if (!label) return;
         set({
           collections: [...get().collections, { id: `col-${Date.now()}`, name: label, titleIds: [] }],
+          planUndo: null,
         });
         get().flash(`Collection "${label}" created`);
       },
       addToCollection: (collectionId, titleId) => {
         set({
+          planUndo: null,
           collections: get().collections.map((collection) =>
             collection.id === collectionId && !collection.titleIds.includes(titleId)
               ? { ...collection, titleIds: [...collection.titleIds, titleId] }
@@ -555,6 +562,7 @@ export const useCinevo = create<CinevoState>()(
       },
       removeFromCollection: (collectionId, titleId) => {
         set({
+          planUndo: null,
           collections: get().collections.map((collection) =>
             collection.id === collectionId
               ? { ...collection, titleIds: collection.titleIds.filter((id) => id !== titleId) }
@@ -563,15 +571,72 @@ export const useCinevo = create<CinevoState>()(
         });
       },
       deleteCollection: (collectionId) => {
-        set({ collections: get().collections.filter((collection) => collection.id !== collectionId) });
+        set({ collections: get().collections.filter((collection) => collection.id !== collectionId), planUndo: null });
         get().flash("Collection deleted");
       },
+      applyLibraryPlan: (actions) => {
+        const before = { collections: get().collections, patches: get().patches };
+        const known = new Set(libraryPool().map((t) => t.id));
+        let collections = [...before.collections];
+        const patches = { ...before.patches };
+        const created = new Map<string, string>();
+        const existingNames = new Set(collections.map((collection) => collection.name.trim().toLowerCase()));
+        const stamp = Date.now();
+        const shelfId = (ref: string) => (ref.startsWith("new:") ? created.get(ref.slice(4).toLowerCase()) : ref);
+        const update = (id: string | undefined, fn: (c: Collection) => Collection | null) => {
+          if (!id) return false;
+          let hit = false;
+          collections = collections.flatMap((c) => {
+            if (c.id !== id) return [c];
+            hit = true;
+            const next = fn(c);
+            return next ? [next] : [];
+          });
+          return hit;
+        };
+        let applied = 0;
+        for (const action of actions) {
+          const ids = "titleIds" in action ? action.titleIds.filter((id) => known.has(id)) : [];
+          if (action.type === "create_shelf") {
+            const normalizedName = action.name.trim().toLowerCase();
+            if (!normalizedName || existingNames.has(normalizedName)) continue;
+            const id = `col-${stamp}-${applied}`;
+            existingNames.add(normalizedName);
+            created.set(normalizedName, id);
+            collections.push({ id, name: action.name.slice(0, 40), titleIds: ids });
+            applied++;
+          } else if (action.type === "add_to_shelf") {
+            if (update(shelfId(action.shelf), (c) => ({ ...c, titleIds: [...new Set([...c.titleIds, ...ids])] }))) applied++;
+          } else if (action.type === "remove_from_shelf") {
+            if (update(shelfId(action.shelf), (c) => ({ ...c, titleIds: c.titleIds.filter((id) => !ids.includes(id)) }))) applied++;
+          } else if (action.type === "rename_shelf") {
+            if (update(shelfId(action.shelf), (c) => ({ ...c, name: action.name.slice(0, 40) }))) applied++;
+          } else if (action.type === "delete_shelf") {
+            if (update(shelfId(action.shelf), () => null)) applied++;
+          } else if (known.has(action.titleId)) {
+            const field = action.type === "retag_title" ? { genre: action.genre } : { title: action.name };
+            patches[action.titleId] = { ...patches[action.titleId], ...field };
+            applied++;
+          }
+        }
+        if (!applied) return 0;
+        set({ collections, patches, planUndo: before });
+        get().flash(`Library updated · ${applied} change${applied === 1 ? "" : "s"}`);
+        return applied;
+      },
+      undoLibraryPlan: () => {
+        const undo = get().planUndo;
+        if (!undo) return;
+        set({ collections: undo.collections, patches: undo.patches, planUndo: null });
+        get().flash("Changes undone");
+      },
       patchTitle: (id, patch) => {
-        set({ patches: { ...get().patches, [id]: { ...get().patches[id], ...patch } } });
+        set({ planUndo: null, patches: { ...get().patches, [id]: { ...get().patches[id], ...patch } } });
         get().flash("Details saved in this house");
       },
       hideTitle: (id) => {
         set({
+          planUndo: null,
           localTitles: get().localTitles.filter((title) => title.id !== id),
           remoteTitles: get().remoteTitles.filter((title) => title.id !== id),
           tonight: get().tonight.filter((titleId) => titleId !== id),
