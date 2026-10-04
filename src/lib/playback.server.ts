@@ -56,7 +56,12 @@ export async function loadTicket(id: string, userId: string) {
   if (!row || (await serverAddressError(row.url))) return null;
   let headers: Record<string, string> = {};
   try {
-    headers = (typeof row.headers === "string" ? JSON.parse(row.headers) : row.headers) as Record<string, string>;
+    const parsed: unknown = typeof row.headers === "string" ? JSON.parse(row.headers) : row.headers;
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+      for (const [key, value] of Object.entries(parsed)) {
+        if (typeof value === "string" && key.length <= 128 && value.length <= 4096) headers[key] = value;
+      }
+    }
   } catch {
     headers = {};
   }

@@ -68,19 +68,12 @@ export async function syncRemote(
   if (!clean) return [];
   const payload = JSON.stringify({ ...sanitizeNow(now), updatedAt: Date.now() });
   const rows = await sql<{ queue_json: unknown }>`
-    with snap as (
-      select queue_json from cinevo_remotes
-      where code = ${clean} and user_id = ${userId} and expires_at > now()
-    ),
-    upd as (
-      update cinevo_remotes
-      set now_json = ${payload}::jsonb,
-          queue_json = '[]'::jsonb,
-          expires_at = now() + interval '12 hours'
-      where code = ${clean} and user_id = ${userId} and expires_at > now()
-      returning code
-    )
-    select queue_json from snap
+    update cinevo_remotes
+    set now_json = ${payload}::jsonb,
+        queue_json = '[]'::jsonb,
+        expires_at = now() + interval '12 hours'
+    where code = ${clean} and user_id = ${userId} and expires_at > now()
+    returning queue_json
   `;
   return parseCommandList(asJson(rows[0]?.queue_json));
 }
