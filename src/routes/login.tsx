@@ -26,6 +26,14 @@ function readableAuthError(message: string | undefined, signingUp: boolean) {
   return message || (signingUp ? "Could not create that account." : "Email or password did not match.");
 }
 
+// The Grok broker only accepts OAuth callbacks from its own hosts; other
+// deployments (e.g. *.vercel.app) get "invalid redirect" from Google/X.
+function brokerAcceptsThisHost() {
+  if (typeof window === "undefined") return false;
+  const host = window.location.hostname.toLowerCase();
+  return host.endsWith(".grok-sandbox.com") || host === "grok.me" || host.endsWith(".grok.me");
+}
+
 function deskFromLocation() {
   if (typeof window === "undefined") return "";
   const raw = new URLSearchParams(window.location.search).get("desk") || "";
@@ -41,6 +49,11 @@ function Login() {
   const [username, setUsername] = useState("");
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
+  const [federatedAvailable, setFederatedAvailable] = useState(false);
+
+  useEffect(() => {
+    setFederatedAvailable(brokerAcceptsThisHost());
+  }, []);
   // Set by the root loader when the server has sign-in disabled for missing
   // production config (see `@/lib/auth/unavailable`).
   const authUnavailableMessage = useRouteContext({
@@ -55,7 +68,7 @@ function Login() {
 
   useEffect(() => {
     if (!oauthError) return;
-    setError("Google or X did not finish signing in. Try again, or use a passkey.");
+    setError("Google or X did not finish signing in. Use a passkey or your password instead.");
   }, [oauthError]);
 
   const goHouse = () => {
@@ -320,6 +333,7 @@ function Login() {
             >
               {mode === "up" ? "Already have a house? Sign in" : "New here? Create an account"}
             </button>
+            {federatedAvailable ? (
             <div className="mt-4 grid gap-2">
               {GROK_PROVIDERS.map((p) => (
                 <button
@@ -338,6 +352,7 @@ function Login() {
                 </button>
               ))}
             </div>
+            ) : null}
           </>
           )
         ) : (
