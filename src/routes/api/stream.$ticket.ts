@@ -16,6 +16,22 @@ function upstreamHeaders(ticketHeaders: Record<string, string>, range: string) {
   return headers;
 }
 
+function isLoopbackHost(host: string) {
+  const name = host.toLowerCase().replace(/^\[|\]$/g, "");
+  return name === "localhost" || name === "127.0.0.1" || name === "::1" || name === "0.0.0.0";
+}
+
+/** Plex sometimes redirects a transcode at its own loopback. Keep the public host. */
+function rewriteLoopback(next: string, origin: string) {
+  const target = new URL(next, origin);
+  const base = new URL(origin);
+  if (isLoopbackHost(target.hostname) && !isLoopbackHost(base.hostname)) {
+    target.protocol = base.protocol;
+    target.host = base.host;
+  }
+  return target.toString();
+}
+
 async function fetchMedia(url: string, init: RequestInit) {
   let current = url;
   for (let redirects = 0; redirects <= 3; redirects += 1) {
@@ -23,8 +39,9 @@ async function fetchMedia(url: string, init: RequestInit) {
     const response = await fetch(current, { ...init, redirect: "manual" });
     if (response.status < 300 || response.status >= 400) return response;
     const location = response.headers.get("location");
+    await response.body?.cancel();
     if (!location || redirects === 3) throw new Error("Too many media redirects");
-    current = new URL(location, current).toString();
+    current = rewriteLoopback(location, current);
   }
   throw new Error("Too many media redirects");
 }
@@ -57,6 +74,13 @@ export const Route = createFileRoute("/api/stream/$ticket")({
           upstream = await fetchMedia(ticket.url, {
             headers: upstreamHeaders(ticket.headers, range),
           });
+          const type = upstream.headers.get("content-type") || "";
+          if (range && !isVideoResponse(upstream.status, type)) {
+            await upstream.body?.cancel();
+            upstream = await fetchMedia(ticket.url, {
+              headers: upstreamHeaders(ticket.headers, ""),
+            });
+          }
         } catch {
           return new Response("CINEVO could not reach that media server.", { status: 502 });
         }

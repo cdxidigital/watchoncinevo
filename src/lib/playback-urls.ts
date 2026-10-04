@@ -53,6 +53,25 @@ export async function serverAddressError(uri: string) {
 
 export type PlaybackFit = "original" | "compatible";
 
+function plexLocation(uri: string) {
+  try {
+    const host = new URL(uri).hostname.toLowerCase().replace(/^\[|\]$/g, "");
+    if (
+      host === "localhost" ||
+      host.endsWith(".local") ||
+      host.startsWith("10.") ||
+      host.startsWith("192.168.") ||
+      /^172\.(1[6-9]|2\d|3[01])\./.test(host) ||
+      host.startsWith("127.")
+    ) {
+      return "lan";
+    }
+  } catch {
+    /* public */
+  }
+  return "wan";
+}
+
 export function plexStreamTarget(
   uri: string,
   ratingKey: string,
@@ -63,9 +82,11 @@ export function plexStreamTarget(
   const key = ratingKey.replace(/^plex-/, "").replace(/^\//, "");
   const client = clientId || "cinevo-web";
   const compatible = fit === "compatible";
+  const base = uri.replace(/\/$/, "");
+  const session = `c${Date.now().toString(36)}${key}`.replace(/[^a-z0-9]/gi, "").slice(0, 40);
   const params = new URLSearchParams({
     hasMDE: "1",
-    path: `/library/metadata/${key}`,
+    path: `${base}/library/metadata/${key}`,
     mediaIndex: "0",
     partIndex: "0",
     protocol: "http",
@@ -75,34 +96,46 @@ export function plexStreamTarget(
     directStreamAudio: compatible ? "0" : "1",
     videoQuality: compatible ? "80" : "99",
     maxVideoBitrate: compatible ? "20000" : "200000",
-    location: "lan",
+    location: plexLocation(uri),
     mediaBufferSize: compatible ? "10240" : "20480",
     subtitleSize: "100",
     audioBoost: "100",
     autoAdjustQuality: "0",
-    copyts: "1",
+    copyts: compatible ? "0" : "1",
     offset: "0",
-    session: `cinevo-${key}`.slice(0, 48),
+    session,
     "X-Plex-Product": "CINEVO",
     "X-Plex-Client-Identifier": client,
     "X-Plex-Platform": "Chrome",
+    "X-Plex-Device": "Web",
+    "X-Plex-Device-Name": "CINEVO",
     "X-Plex-Version": "1.0.0",
+    "X-Plex-Client-Profile-Name": "generic",
     "X-Plex-Token": token,
   });
   if (compatible) {
     params.set("videoCodec", "h264");
     params.set("audioCodec", "aac");
+    params.set("container", "mp4");
     params.set("videoResolution", "1920x1080");
   }
+  const headers: Record<string, string> = {
+    "X-Plex-Token": token,
+    "X-Plex-Product": "CINEVO",
+    "X-Plex-Client-Identifier": client,
+    "X-Plex-Platform": "Chrome",
+    "X-Plex-Device": "Web",
+    "X-Plex-Device-Name": "CINEVO",
+    "X-Plex-Client-Profile-Name": "generic",
+    Accept: "*/*",
+  };
+  if (compatible) {
+    headers["X-Plex-Client-Profile-Extra"] =
+      "append-transcode-target-codec(type=videoProfile&context=streaming&videoCodec=h264&audioCodec=aac&protocol=http)";
+  }
   return {
-    url: `${uri.replace(/\/$/, "")}/video/:/transcode/universal/start.mp4?${params.toString()}`,
-    headers: {
-      "X-Plex-Token": token,
-      "X-Plex-Product": "CINEVO",
-      "X-Plex-Client-Identifier": client,
-      "X-Plex-Platform": "Chrome",
-      Accept: "*/*",
-    },
+    url: `${base}/video/:/transcode/universal/start.mp4?${params.toString()}`,
+    headers,
   };
 }
 

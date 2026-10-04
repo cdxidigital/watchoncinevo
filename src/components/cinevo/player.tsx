@@ -89,6 +89,7 @@ export function Player() {
   const sources = useCinevo((s) => s.sources);
   const nodeUrl = useCinevo((s) => s.nodeUrl);
   const nodeToken = useCinevo((s) => s.nodeToken);
+  const plexToken = useCinevo((s) => s.plexToken);
   const plexClient = useCinevo((s) => s.plexClientId);
   const user = useCurrentUser();
   const title = titleById(playingId);
@@ -182,7 +183,7 @@ export function Player() {
     if (!title || mediaUrl(title.id)) return;
     const source =
       sourceForTitle(title, sources) ||
-      sources.find((item) => item.kind === title.source && item.baseUrl && (item.accessToken || item.kind === "folder"));
+      sources.find((item) => item.kind === title.source && item.baseUrl && (item.accessToken || item.kind === "folder" || (item.kind === "plex" && plexToken)));
     const openProxy = (
       provider: "plex" | "jellyfin" | "node",
       uri: string,
@@ -215,13 +216,14 @@ export function Player() {
         cancelled = true;
       };
     }
-    if ((title.source === "plex" || title.source === "jellyfin") && title.path && source?.baseUrl && source.accessToken) {
-      openProxy(title.source, source.baseUrl, title.path, source.accessToken, plexClient || undefined);
+    if ((title.source === "plex" || title.source === "jellyfin") && title.path && source?.baseUrl) {
+      const token = source.accessToken || (title.source === "plex" ? plexToken : "");
+      if (token) openProxy(title.source, source.baseUrl, title.path, token, plexClient || undefined);
     }
     return () => {
       cancelled = true;
     };
-  }, [title, nodeToken, nodeUrl, plexClient, sources, fit]);
+  }, [title?.id, title?.path, title?.source, title?.sourceLabel, nodeToken, nodeUrl, plexClient, plexToken, sources, fit]);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -468,6 +470,7 @@ export function Player() {
             ) {
               setFit("compatible");
               setPlaybackFailed(false);
+              setRemoteErr("");
               return;
             }
             setPlaybackFailed(true);

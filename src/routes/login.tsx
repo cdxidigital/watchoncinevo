@@ -4,7 +4,7 @@ import { Show, SignInButton, SignUpButton, UserButton } from "@clerk/tanstack-re
 import { GROK_PROVIDERS, authClient, authEnabled, getBearerToken, rememberSessionToken, sessionTokenFromAuthResponse, signIn } from "@/lib/auth/client";
 import { Logo } from "@/components/cinevo/logo";
 import { PasskeyLogin } from "@/components/cinevo/passkey-login";
-import { claimUsername } from "@/lib/sharing";
+import { claimUsername, suggestUsername } from "@/lib/sharing";
 import { appDestination } from "@/lib/app-destination";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
 
@@ -119,9 +119,15 @@ function Login() {
   }, [isPending, signedIn, desk, room, core]);
 
   const afterEmail = async (name: string) => {
-    if (name.trim()) {
+    const typed = name.trim();
+    const handle = typed || suggestUsername(email);
+    if (handle) {
       try {
-        await claimUsername({ data: { username: name.trim(), display: name.trim() } });
+        const first = await claimUsername({ data: { username: handle, display: typed || handle } });
+        if (!first.ok && !typed) {
+          const alt = `${handle.slice(0, 14)}${String(Date.now()).slice(-2)}`;
+          await claimUsername({ data: { username: alt, display: alt } });
+        }
       } catch {
         /* UsernameGate will retry on /app */
       }
@@ -241,16 +247,13 @@ function Login() {
         <Link to="/" className="login-brand">
           <Logo size="lg" layout="stacked" />
         </Link>
-        <p className="font-ui text-xs font-semibold tracking-[0.12em] text-cine-cyan">CINEVO · PRIVATE CINEMA</p>
-        <h1 className="mt-3 font-ui text-4xl font-semibold leading-tight tracking-tight">
-          {mode === "up" ? "Create your house." : "Take your seat."}
-        </h1>
-        <p className="mt-3 text-sm text-cine-muted">
+        <h1>{mode === "up" ? "Create your house." : "Take your seat."}</h1>
+        <p className="login-lede">
           {desk
             ? "Sign in on this phone. The other screen follows you in."
             : mode === "up"
-              ? "Add an email, then a passkey or a password. A phone QR code signs another screen into that same account."
-              : "A passkey or a phone QR code signs in this account. A password works too."}
+              ? "Add an email, then a passkey or a password."
+              : "A passkey or a QR code. A password works too."}
         </p>
 
         {authEnabled ? (
@@ -260,7 +263,7 @@ function Login() {
             </div>
           ) : (
           <>
-            <form onSubmit={(e) => void submit(e)} className="grid gap-3">
+            <form onSubmit={(e) => void submit(e)} className="login-form">
               {mode === "up" ? (
                 <>
                   <input
@@ -271,7 +274,7 @@ function Login() {
                     aria-label="Username"
                     maxLength={20}
                     title="3–20 letters, numbers, or underscores, starting with a letter"
-                    className="mt-6 h-12 rounded-xl border border-cine-border bg-cine-well px-4 font-ui"
+                    className="login-field"
                   />
                   <input
                     type="email"
@@ -281,7 +284,7 @@ function Login() {
                     autoComplete="email"
                     required
                     aria-label="Email"
-                    className="h-12 rounded-xl border border-cine-border bg-cine-well px-4 font-ui"
+                    className="login-field"
                   />
                 </>
               ) : null}
@@ -306,7 +309,7 @@ function Login() {
                   autoComplete="email"
                   required
                   aria-label="Email"
-                  className="h-12 rounded-xl border border-cine-border bg-cine-well px-4 font-ui"
+                  className="login-field"
                 />
               ) : null}
               <input
@@ -320,7 +323,7 @@ function Login() {
                 aria-label="Password"
                 className="h-12 rounded-xl border border-cine-border bg-cine-well px-4 font-ui"
               />
-              <p className="text-xs text-cine-faint">Password at least 8 characters.{mode === "up" ? " Username is optional." : ""}</p>
+              {mode === "up" ? <p className="login-hint">Password at least 8 characters. Username is optional.</p> : null}
               <button type="submit" disabled={pending} className="house-btn house-btn--ghost h-12 w-full">
                 {pending ? "Working…" : mode === "up" ? "Create account with password" : "Sign in with password"}
               </button>
@@ -336,7 +339,7 @@ function Login() {
               {mode === "up" ? "Already have a house? Sign in" : "New here? Create an account"}
             </button>
             {federatedAvailable ? (
-            <div className="mt-4 grid gap-2">
+            <div className="login-social">
               {GROK_PROVIDERS.map((p) => (
                 <button
                   key={p.providerId}
@@ -348,7 +351,7 @@ function Login() {
                       setError(err instanceof Error ? err.message : "Could not start that sign-in.");
                     });
                   }}
-                  className="h-11 rounded-xl border border-cine-border bg-cine-elevated font-ui text-sm font-semibold hover:border-cine-cyan"
+                  className="login-social__btn"
                 >
                   Continue with {p.label}
                 </button>

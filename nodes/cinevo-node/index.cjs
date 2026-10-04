@@ -510,7 +510,7 @@ function hashStr(s) {
 const VIDEO_RE = /\.(mp4|mkv|mov|avi|webm|m4v|wmv|ts|m2ts)$/i;
 
 function walkVideos(dir, acc, depth) {
-  if (depth > 6 || acc.length >= 80) return;
+  if (depth > 8 || acc.length >= 2000) return;
   let entries;
   try {
     entries = fs.readdirSync(dir, { withFileTypes: true });
@@ -518,7 +518,7 @@ function walkVideos(dir, acc, depth) {
     return;
   }
   for (const entry of entries) {
-    if (acc.length >= 80) return;
+    if (acc.length >= 2000) return;
     if (entry.name.startsWith(".")) continue;
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) walkVideos(full, acc, depth + 1);
@@ -573,17 +573,49 @@ function yearOf(fileName) {
   return m ? m[1] : "";
 }
 
+function episodeCode(filePath, fileName) {
+  const normalized = String(filePath || fileName).replace(/\\/g, "/");
+  const parts = normalized.split("/").filter(Boolean);
+  const file = parts.pop() || fileName;
+  let match = /s(\d{1,2})e(\d{1,3})/i.exec(file) || /\b(\d{1,2})x(\d{1,3})\b/i.exec(file);
+  if (!match) {
+    const parent = parts[parts.length - 1] || "";
+    const season = /season\s*(\d{1,2})/i.exec(parent) || /^s(\d{1,2})$/i.exec(parent);
+    const ep = /(?:^|[^a-z])(?:episode|ep)[\s._-]*(\d{1,3})\b/i.exec(file) || /^e(\d{1,3})\b/i.exec(file) || /^(\d{1,3})(?:[\s._-]|$)/.exec(String(file).replace(/\.[^.]+$/, ""));
+    if (season && ep) match = [null, season[1], ep[1]];
+  }
+  if (!match) return "";
+  return `S${String(Number(match[1])).padStart(2, "0")}E${String(Number(match[2])).padStart(2, "0")}`;
+}
+
 function titleFromVideo(file) {
-  const title = prettyName(file.name);
   const year = yearOf(file.name);
+  const code = episodeCode(file.path, file.name);
+  let title = prettyName(file.name);
+  if (code) {
+    title = title
+      .replace(/s\d{1,2}\s*e\d{1,3}/gi, " ")
+      .replace(/\b\d{1,2}\s*x\s*\d{1,3}\b/gi, " ")
+      .replace(/\b(?:episode|ep)\s*\d{1,3}\b/gi, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+    if (/^e\d{1,3}$/i.test(title)) title = "";
+    const parts = String(file.path || "").replace(/\\/g, "/").split("/").filter(Boolean);
+    parts.pop();
+    const parent = parts[parts.length - 1] || "";
+    const show = /season|^s\d{1,2}$/i.test(parent) ? parts[parts.length - 2] || "" : "";
+    if (show && title.toLowerCase().startsWith(show.toLowerCase())) title = title.slice(show.length).trim();
+    const head = show ? `${show} · ${code}` : code;
+    title = title ? `${head} · ${title}` : head;
+  }
   return {
     id: `node-${hashStr(file.path)}`,
-    title,
+    title: title || prettyName(file.name),
     year,
-    kind: "movie",
-    genre: "Home video",
+    kind: code ? "series" : "movie",
+    genre: code ? "Series" : "Home video",
     path: file.path,
-    poster: posterData(file.path, title, year),
+    poster: posterData(file.path, title || prettyName(file.name), year),
   };
 }
 

@@ -476,7 +476,7 @@ export const useCinevo = create<CinevoState>()(
         const next = titles.filter((t) => !existing.has(t.id));
         const sources = get().sources.filter((s) => s.id !== source.id);
         set({
-          localTitles: [...next, ...get().localTitles].slice(0, 200),
+          localTitles: [...next, ...get().localTitles].slice(0, 2000),
           sources: [{ ...source, count: next.length + (get().localTitles.filter((t) => t.sourceLabel === source.name).length) }, ...sources],
         });
         get().flash(next.length ? `Added ${next.length} titles from ${source.name}` : "No new video files in that folder");
@@ -492,7 +492,7 @@ export const useCinevo = create<CinevoState>()(
       addRemoteTitles: (titles, source) => {
         const existing = new Set(get().remoteTitles.map((t) => t.id));
         const next = titles.filter((t) => !existing.has(t.id));
-        const merged = [...next, ...get().remoteTitles].slice(0, 300);
+        const merged = [...next, ...get().remoteTitles].slice(0, 2000);
         const sources = get().sources.filter((s) => s.id !== source.id);
         const count = merged.filter((t) => t.source === source.kind && (t.sourceLabel === source.name || t.sourceLabel.startsWith(`${source.name.replace(/^@/, "")} ·`))).length || next.length;
         set({
@@ -802,7 +802,11 @@ export const useCinevo = create<CinevoState>()(
           ...t,
           poster: t.poster?.startsWith("data:") ? "" : t.poster,
         })),
-        remoteTitles: s.remoteTitles,
+        remoteTitles: s.remoteTitles.map((t) => ({
+          ...t,
+          poster: t.poster?.startsWith("data:") ? "" : t.poster,
+          still: t.still?.startsWith("data:") ? "" : t.still,
+        })),
         sourceFilter: s.sourceFilter,
         activeSourceId: s.activeSourceId,
         collections: s.collections,

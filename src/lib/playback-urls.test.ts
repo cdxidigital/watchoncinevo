@@ -16,9 +16,10 @@ test("plex playback is a CINEVO-side stream, not direct play", () => {
   assert.equal(url.searchParams.get("directStream"), "1");
   assert.equal(url.searchParams.get("videoQuality"), "99");
   assert.equal(url.searchParams.get("maxVideoBitrate"), "200000");
-  assert.equal(url.searchParams.get("location"), "lan");
+  assert.equal(url.searchParams.get("location"), "wan");
   assert.equal(url.searchParams.get("videoCodec"), null);
-  assert.equal(url.searchParams.get("path"), "/library/metadata/99");
+  assert.equal(url.searchParams.get("path"), "https://plex.example:32400/library/metadata/99");
+  assert.equal(url.searchParams.get("X-Plex-Client-Profile-Name"), "generic");
   assert.equal(url.searchParams.get("X-Plex-Token"), "secret-token");
   assert.equal(target.headers["X-Plex-Token"], "secret-token");
   assert.equal(target.url.includes("/api/stream"), false);
@@ -49,14 +50,19 @@ test("loopback and blocked addresses", async () => {
   assert.equal(await serverAddressError("file:///etc/passwd"), "That server address is not allowed.");
   assert.equal(await serverAddressError("http://169.254.169.254/"), "That server address is not allowed.");
   assert.equal(await serverAddressError("http://192.168.1.20:32400"), null);
+  const local = new URL(plexStreamTarget("http://192.168.1.20:32400", "12", "token", "client").url);
+  assert.equal(local.searchParams.get("location"), "lan");
 });
 
 test("a failed browser play can ask the server for an H.264 copy", () => {
-  const plex = new URL(plexStreamTarget("https://plex.example:32400/", "plex-99", "secret-token", "client-1", "compatible").url);
+  const target = plexStreamTarget("https://plex.example:32400/", "plex-99", "secret-token", "client-1", "compatible");
+  const plex = new URL(target.url);
   assert.equal(plex.searchParams.get("directPlay"), "0");
   assert.equal(plex.searchParams.get("directStream"), "0");
   assert.equal(plex.searchParams.get("videoCodec"), "h264");
   assert.equal(plex.searchParams.get("audioCodec"), "aac");
+  assert.equal(plex.searchParams.get("container"), "mp4");
+  assert.match(target.headers["X-Plex-Client-Profile-Extra"] || "", /h264/);
   assert.equal(plex.searchParams.get("maxVideoBitrate"), "20000");
   assert.equal(plex.searchParams.get("videoResolution"), "1920x1080");
 

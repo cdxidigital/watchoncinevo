@@ -177,13 +177,13 @@ export function renderWebManifest(hostHeader) {
           type: "image/png",
         },
         {
-          src: "/__grok/icon-180.png",
+          src: "/__grok/icon-512.png",
           sizes: "512x512",
           type: "image/png",
           purpose: "any",
         },
         {
-          src: "/__grok/icon-180.png",
+          src: "/__grok/icon-512.png",
           sizes: "512x512",
           type: "image/png",
           purpose: "maskable",
