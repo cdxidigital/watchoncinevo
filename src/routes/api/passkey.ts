@@ -3,6 +3,7 @@ import { approveDesk, loginPasskey, newChallenge, openDesk, readDesk, registerPa
 import { pageOrigin, passkeyHostError } from "@/lib/passkey-crypto";
 import { AUTH_NOT_CONFIGURED_CODE, AUTH_NOT_CONFIGURED_MESSAGE } from "@/lib/auth/unavailable";
 import { isAuthNotConfiguredError } from "@/lib/auth/verify.server";
+import { passkeyRequestSchema } from "@/lib/validators";
 
 function json(body: unknown, status = 200, cookie?: string) {
   const headers = new Headers({ "content-type": "application/json", "cache-control": "no-store" });
@@ -24,12 +25,16 @@ export const Route = createFileRoute("/api/passkey")({
         if (!where || (origin && origin !== where.origin)) {
           return json({ error: "This page could not confirm its address. Reload and try again." }, 400);
         }
-        let body: Record<string, string> = {};
+        let rawBody: unknown;
         try {
-          body = (await request.json()) as Record<string, string>;
+          rawBody = await request.json();
         } catch {
           return json({ error: "Missing request." }, 400);
         }
+        const parsed = passkeyRequestSchema.safeParse(rawBody);
+        if (!parsed.success) return json({ error: "Invalid request." }, 400);
+        const body = parsed.data;
+        const normalizedBody = { ...body, algorithm: body.algorithm === undefined ? undefined : Number(body.algorithm) };
         const webauthn = body.action === "challenge" || body.action === "register" || body.action === "login";
         if (webauthn) {
           const hostError = passkeyHostError(where.rpId);
@@ -41,11 +46,11 @@ export const Route = createFileRoute("/api/passkey")({
             return json({ ...challenge, rpId: where.rpId });
           }
           if (body.action === "register") {
-            const session = await registerPasskey(request, body);
+            const session = await registerPasskey(request, normalizedBody);
             return json({ token: session.token }, 200, session.cookie);
           }
           if (body.action === "login") {
-            const session = await loginPasskey(request, body);
+            const session = await loginPasskey(request, normalizedBody);
             return json({ token: session.token }, 200, session.cookie);
           }
           if (body.action === "desk") {

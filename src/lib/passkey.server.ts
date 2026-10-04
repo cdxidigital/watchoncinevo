@@ -123,7 +123,7 @@ export async function registerPasskey(request: Request, body: {
     }
     userId = existing.user.id;
   } else {
-    const user = await ctx.internalAdapter.createUser({ email, name, emailVerified: true });
+    const user = await ctx.internalAdapter.createUser({ email, name, emailVerified: false });
     if (!user?.id) throw new Error("Could not create that account.");
     userId = user.id;
   }
@@ -188,7 +188,7 @@ export async function readDesk(secret: string) {
   const sql = await getSql();
   const rows = await sql<{ token: string }>`
     update cinevo_desk
-    set token = null, status = 'done'
+    set status = 'done'
     where secret = ${secret} and status = 'approved' and token is not null and expires_at > now()
     returning token
   `;

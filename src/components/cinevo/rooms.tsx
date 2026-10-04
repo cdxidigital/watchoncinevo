@@ -194,17 +194,17 @@ export function StageRoom() {
     return p != null && p > 0 && p < 100;
   });
   const added = recentlyAdded(12, pool);
-  const addedIds = new Set(added.map((t) => t.id));
   const myList = library.filter((t) => favorites.includes(t.id));
   const taste = useMemo(() => tasteFrom(library, favorites, progress), [library, favorites, progress]);
   const suggestions = useMemo(() => {
+    const addedIds = new Set(added.map((t) => t.id));
     const base = pool.filter((t) => !favorites.includes(t.id) && !addedIds.has(t.id));
     if (!taste.length) return base.slice(0, 12);
     const weight = new Map(taste.map((item) => [item.genre, item.count]));
     const score = (title: Title) =>
       (title.genres?.length ? title.genres : [title.genre]).reduce((n, genre) => n + (weight.get(genre) ?? 0), 0);
     return [...base].sort((a, b) => score(b) - score(a)).slice(0, 12);
-  }, [pool, favorites, addedIds, taste]);
+  }, [pool, favorites, added, taste]);
   const played = useMemo(() => mostPlayed(library, plays, 10).map((row) => row.title), [library, plays]);
   const queued = tonight
     .map((id) => titleById(id))

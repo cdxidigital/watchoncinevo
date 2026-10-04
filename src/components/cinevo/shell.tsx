@@ -1,5 +1,5 @@
 import { Bell, Home, Library, Menu, Search, Server, Settings2, Sparkles, Wrench, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { paramFromRoom } from "@/lib/app-destination";
 import { useCinevo, type Room } from "@/lib/cinevo-store";
@@ -98,7 +98,10 @@ export function Shell({
   const serverMode = networkMode(sources, nodeUrl, nodeToken);
   const serverLabel =
     serverMode === "relay" ? "Remote server" : serverMode === "local" ? "This device" : "Set up server";
-  const nav = [...NAV.slice(0, 1), { id: "sidebar" as Room, label: serverLabel, icon: Server }, ...NAV.slice(1)];
+  const nav = useMemo(
+    () => [...NAV.slice(0, 1), { id: "sidebar" as Room, label: serverLabel, icon: Server }, ...NAV.slice(1)],
+    [serverLabel],
+  );
 
   useEffect(() => {
     if (!nav.some((item) => item.id === room)) setRoom("stage");

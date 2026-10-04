@@ -3,6 +3,7 @@ import { UnauthorizedError, isAuthNotConfiguredError, requireUserId } from "@/li
 import { AUTH_NOT_CONFIGURED_CODE, AUTH_NOT_CONFIGURED_MESSAGE } from "@/lib/auth/unavailable";
 import { normalizeCode, sanitizeCommand, sanitizeNow } from "@/lib/remote-protocol";
 import { closeRemote, openRemote, pushRemoteCommand, readRemote, syncRemote } from "@/lib/remote.server";
+import { remoteRequestSchema } from "@/lib/validators";
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -49,7 +50,10 @@ export const Route = createFileRoute("/api/remote")({
         } catch {
           return json({ ok: false, error: "CINEVO could not read that request." }, 400);
         }
-        const action = String(body.action || "");
+        const parsed = remoteRequestSchema.safeParse(body);
+        if (!parsed.success) return json({ ok: false, error: "That request is not valid." }, 400);
+        body = parsed.data;
+        const action = body.action;
         try {
           if (action === "open" || action === "rotate" || action === "close") {
             const id = await userId(request);
