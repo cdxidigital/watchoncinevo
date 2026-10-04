@@ -60,13 +60,25 @@ export async function getSessionUser(
   bearerToken?: string,
 ): Promise<VerifiedUser | null> {
   if (process.env.CLERK_SECRET_KEY?.trim() && process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY?.trim()) {
-    try {
-      const { resolveClerkIdentity } = await import("./clerk-identity.server");
-      const clerkIdentity = await resolveClerkIdentity();
-      if (clerkIdentity) return { id: clerkIdentity.internalUserId, email: clerkIdentity.email };
-    } catch (error) {
-      console.warn("[auth] Clerk identity resolution failed; retaining Better Auth fallback", error);
+    const { resolveClerkIdentity } = await import("./clerk-identity.server");
+    // Any thrown error here (DB down, Clerk API error, etc.) is NOT caught:
+    // a Clerk-configured app that can't verify its own sessions must fail
+    // closed, not silently hand the request to the Better Auth cookie check
+    // below. Only `{ status: "none" }` — no Clerk session at all — is safe to
+    // fall through.
+    const resolution = await resolveClerkIdentity();
+    if (resolution.status === "ok") {
+      return { id: resolution.identity.internalUserId, email: resolution.identity.email };
     }
+    if (resolution.status === "invalid") {
+      // A real Clerk session exists but isn't a usable/mapped identity
+      // (unverified email, or email matched 0/2+ Better Auth accounts). Fail
+      // closed rather than falling back to whatever Better Auth cookie is
+      // present — that cookie could belong to a different person.
+      return null;
+    }
+    // status === "none": nobody is signed in via Clerk; fall through to
+    // Better Auth below (compatibility mode during the migration window).
   }
   if (!authConfigured && !gateIdentityEnabled()) return null;
   // Auth is wanted but disabled for missing production config (no

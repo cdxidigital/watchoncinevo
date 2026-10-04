@@ -1,5 +1,6 @@
-import { createRootRoute, HeadContent, Outlet, Scripts } from "@tanstack/react-router";
+import { createRootRoute, HeadContent, Outlet, Scripts, useRouteContext } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
+import { ClerkProvider } from "@clerk/tanstack-react-start";
 import { AuthProvider } from "@/lib/auth/provider";
 import { PreviewHostBridge } from "@/components/preview-host-bridge";
 import { Rehydrate } from "@/components/cinevo/rehydrate";
@@ -23,8 +24,19 @@ const fetchSessionUser = createServerFn({ method: "GET" }).handler(async () => {
   }
 });
 
+// The publishable key is, by design, safe to ship to the browser — it only
+// identifies which Clerk application to talk to. `CLERK_SECRET_KEY` never
+// leaves the server. `null` here (Clerk not configured) disables the
+// `ClerkProvider` wrap below rather than passing an empty string to it.
+const fetchClerkPublishableKey = createServerFn({ method: "GET" }).handler(async () => {
+  return process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY?.trim() || null;
+});
+
 export const Route = createRootRoute({
-  beforeLoad: async () => ({ sessionUser: await fetchSessionUser() }),
+  beforeLoad: async () => ({
+    sessionUser: await fetchSessionUser(),
+    clerkPublishableKey: await fetchClerkPublishableKey(),
+  }),
   head: () => ({
     meta: [
       { charSet: "utf-8" },
@@ -54,7 +66,21 @@ export const Route = createRootRoute({
       },
     ],
   }),
-  component: () => (
+  component: RootDocument,
+});
+
+function AppProviders({ children }: { children: React.ReactNode }) {
+  const clerkPublishableKey = useRouteContext({ from: "__root__", select: (ctx) => ctx.clerkPublishableKey });
+  if (!clerkPublishableKey) return <AuthProvider>{children}</AuthProvider>;
+  return (
+    <ClerkProvider publishableKey={clerkPublishableKey}>
+      <AuthProvider>{children}</AuthProvider>
+    </ClerkProvider>
+  );
+}
+
+function RootDocument() {
+  return (
     <html lang="en" suppressHydrationWarning>
       <head>
         <HeadContent />
@@ -68,11 +94,11 @@ export const Route = createRootRoute({
         <PreviewHostBridge />
         <Rehydrate />
         <Pwa />
-        <AuthProvider>
+        <AppProviders>
           <Outlet />
-        </AuthProvider>
+        </AppProviders>
         <Scripts />
       </body>
     </html>
-  ),
-});
+  );
+}

@@ -1,5 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { approveDesk, loginPasskey, newChallenge, openDesk, readDesk, registerPasskey } from "@/lib/passkey.server";
+import {
+  approveDesk,
+  loginPasskey,
+  newChallenge,
+  openDesk,
+  PasskeyUserError,
+  readDesk,
+  registerPasskey,
+} from "@/lib/passkey.server";
 import { pageOrigin, passkeyHostError } from "@/lib/passkey-crypto";
 import { AUTH_NOT_CONFIGURED_CODE, AUTH_NOT_CONFIGURED_MESSAGE } from "@/lib/auth/unavailable";
 import { isAuthNotConfiguredError } from "@/lib/auth/verify.server";
@@ -64,8 +72,16 @@ export const Route = createFileRoute("/api/passkey")({
               503,
             );
           }
-          const message = error instanceof Error ? error.message : "Passkey failed.";
-          return json({ error: message }, 400);
+          // Only PasskeyUserError's message is shown to the browser — it's the
+          // deliberately-written, user-facing set thrown above. Anything else
+          // (DB outage, an unexpected crypto/library throw, etc.) is logged
+          // server-side and replaced with a generic message so internal
+          // details never reach the client.
+          if (error instanceof PasskeyUserError) {
+            return json({ error: error.message }, 400);
+          }
+          console.error("[passkey] unexpected error", error);
+          return json({ error: "Something went wrong. Please try again." }, 400);
         }
       },
     },

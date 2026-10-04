@@ -1,5 +1,6 @@
 import { createFileRoute, Link, useRouteContext } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { Show, SignInButton, SignUpButton, UserButton } from "@clerk/tanstack-react-start";
 import { GROK_PROVIDERS, authClient, authEnabled, getBearerToken, rememberSessionToken, sessionTokenFromAuthResponse, signIn } from "@/lib/auth/client";
 import { Logo } from "@/components/cinevo/logo";
 import { PasskeyLogin } from "@/components/cinevo/passkey-login";
@@ -61,6 +62,7 @@ function Login() {
     select: (ctx) =>
       ctx.sessionUser && "authNotConfigured" in ctx.sessionUser ? ctx.sessionUser.error : null,
   });
+  const clerkPublishableKey = useRouteContext({ from: "__root__", select: (ctx) => ctx.clerkPublishableKey });
 
   useEffect(() => {
     setMode(initial);
@@ -358,6 +360,35 @@ function Login() {
         ) : (
           <p className="mt-8 text-sm text-cine-muted">Sign-in is disabled.</p>
         )}
+
+        {clerkPublishableKey ? (
+          <div className="mt-4 grid gap-2">
+            <p className="login-split">or continue with Clerk</p>
+            <Show when="signed-out">
+              <SignInButton mode="modal">
+                <button type="button" className="house-btn house-btn--ghost h-11 w-full">
+                  Sign in with Clerk
+                </button>
+              </SignInButton>
+              <SignUpButton mode="modal">
+                <button type="button" className="house-btn house-btn--ghost h-11 w-full">
+                  Create account with Clerk
+                </button>
+              </SignUpButton>
+            </Show>
+            <Show when="signed-in">
+              <div className="flex items-center justify-between rounded-xl border border-cine-border bg-cine-elevated p-3">
+                <span className="text-sm">Signed in with Clerk</span>
+                <div className="flex items-center gap-3">
+                  <UserButton />
+                  <button type="button" className="house-btn house-btn--ghost h-9" onClick={goHouse}>
+                    Continue
+                  </button>
+                </div>
+              </div>
+            </Show>
+          </div>
+        ) : null}
       </div>
     </main>
   );
