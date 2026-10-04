@@ -1,5 +1,5 @@
 import { Bell, Home, Library, Menu, Search, Server, Settings2, Sparkles, Wrench, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { paramFromRoom } from "@/lib/app-destination";
 import { useCinevo, type Room } from "@/lib/cinevo-store";
@@ -169,10 +169,27 @@ export function Shell({
     });
   };
 
+  const scene =
+    room === "stage"
+      ? { place: "The Marquee", cue: "Tonight's programme" }
+      : room === "sidebar"
+        ? { place: "The Archive", cue: "Your private collection" }
+        : room === "tools"
+          ? { place: "The Projection Booth", cue: "House controls" }
+          : { place: "The Lobby", cue: "CINEVO" };
+
   return (
-    <div className={cn("cinevo-house", night && "cinevo-night", zen && "cinevo-zen")}>
-      <div className="house-still" />
-      <div className="house-ambient" />
+    <div
+      className={cn("cinevo-house", night && "cinevo-night", zen && "cinevo-zen")}
+      data-room={room}
+      style={{ "--scene-place": `"${scene.place}"` } as CSSProperties}
+    >
+      <div className="house-still" aria-hidden="true" />
+      <div className="house-ambient" aria-hidden="true" />
+      <div className="house-lights" aria-hidden="true"><i /><i /><i /><i /><i /></div>
+      <div className="house-scene-label" aria-hidden="true">
+        <span>{scene.cue}</span><b>{scene.place}</b>
+      </div>
       <aside className="side-rail">
         <Link to="/" aria-label="CINEVO home" className="side-rail__brand">
           <Logo size="sm" tagline={false} />

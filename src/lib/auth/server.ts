@@ -19,7 +19,7 @@
  *     origin from the request, so real sign-in works (no demo users). Sessions
  *     and identities persist in the embedded PGLite DB (same DB as app data);
  *     the process restart wipes both. Live-preview iframe clients use a bearer
- *     token (partitioned cookies) — see `client.ts`.
+  *     token — see `client.ts`.
  *   - Off (`VITE_AUTH_ENABLED=false`, the shipped default): no providers;
  *     `requireUserId` resolves a dev user with no database configured, and
  *     throws fail-closed once `DATABASE_URL` is set (see `verify.server.ts`).
@@ -287,15 +287,21 @@ function createAuth(secret: string) {
   ...(emailAndPasswordEnabled ? { emailAndPassword: { enabled: true } } : {}),
 
   // `__Host-` prefixed cookies: the browser REFUSES any same-named cookie that
-  // carries a `Domain` attribute, so a sibling `*.grok.me` app cannot "toss" a
-  // `Domain=.grok.me` session cookie onto this app. `__Host-` requires Secure +
+  // carries a `Domain` attribute, so a sibling `*.grok.me` app cannot "toss"
+  // a `Domain=.grok.me` session cookie onto this app. `__Host-` requires Secure +
   // Path=/ + no Domain; Better Auth otherwise uses `__Secure-` (which permits
   // Domain), so we drop its auto prefix (`useSecureCookies: false`) and set
   // Secure + the names ourselves. (Browsers allow Secure cookies on
   // `http://localhost`, so local dev still works.)
+  //
+  // Do not mark auth cookies as Partitioned. The OAuth state/PKCE cookie is
+  // created on this app before the broker redirect and must be available again
+  // when the broker redirects back to this app. CHIPS can give the cookie a
+  // different partition during that round trip, causing Better Auth to report
+  // `state_mismatch`. Preview session reads use the bearer token instead.
   advanced: {
     useSecureCookies: false,
-    defaultCookieAttributes: { secure: true, sameSite: "none", partitioned: true, path: "/" },
+    defaultCookieAttributes: { secure: true, sameSite: "none", path: "/" },
     cookies: {
       session_token: { name: SESSION_TOKEN_COOKIE },
       session_data: { name: "__Host-grok-auth.session_data" },

@@ -40,7 +40,7 @@ export async function issueSession(userId: string) {
   const session = await ctx.internalAdapter.createSession(userId);
   if (!session?.token) throw new Error("Could not start a session.");
   const token = await signedToken(session.token);
-  const cookie = `${SESSION_TOKEN_COOKIE}=${encodeURIComponent(token)}; Path=/; HttpOnly; Secure; SameSite=None; Partitioned; Max-Age=${60 * 60 * 24 * 7}`;
+  const cookie = `${SESSION_TOKEN_COOKIE}=${encodeURIComponent(token)}; Path=/; HttpOnly; Secure; SameSite=None; Max-Age=${60 * 60 * 24 * 7}`;
   return { token, cookie };
 }
 

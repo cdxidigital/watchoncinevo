@@ -7,11 +7,10 @@ import { GROK_PROVIDERS } from "./providers";
  * Better Auth client for this React SPA (browser-side).
  *
  * Talks to this app's OWN Better Auth at same-origin `/api/auth/*`. In the live
- * preview the app is an embedded iframe with PARTITIONED cookies, so after a
- * popup sign-in it can't read the session cookie — it authenticates with a
- * bearer token instead (captured from the popup, see `signIn`). The `onRequest`
- * hook attaches that token when present; when deployed (cookie auth) no token
- * is stored, so nothing changes.
+ * preview the app is an embedded iframe, so after a popup sign-in it uses the
+ * bearer token captured from the popup instead of depending on the session
+ * cookie being readable in the embedded context. The `onRequest` hook attaches
+ * that token when present; when deployed (cookie auth) no token is stored.
  *
  * To sign out call `signOut()` below, NOT `authClient.signOut()`: the raw call
  * leaves the bearer token in place, and `onRequest` keeps re-attaching it, so
@@ -41,8 +40,8 @@ export const authEnabled = import.meta.env.VITE_AUTH_ENABLED !== "false";
 export { GROK_PROVIDERS };
 
 // ── Live-preview bearer token ────────────────────────────────────────────────
-// The embedded preview iframe has partitioned cookies, so we keep the session's
-// bearer token in sessionStorage and attach it to every Better Auth request (and
+// The embedded preview iframe may not reliably expose its cookies, so we keep
+// the session's bearer token in sessionStorage and attach it to every Better Auth request (and
 // to server functions, via `@/lib/auth/middleware`). Empty everywhere except the
 // preview after a popup sign-in, so the cookie path is untouched elsewhere.
 const BEARER_KEY = "grok-auth.bearer-token";
@@ -51,7 +50,7 @@ const BEARER_KEY = "grok-auth.bearer-token";
 export function getBearerToken(): string | null {
   if (typeof window === "undefined") return null;
   try {
-    return window.localStorage.getItem(BEARER_KEY) || window.sessionStorage.getItem(BEARER_KEY);
+    return window.sessionStorage.getItem(BEARER_KEY);
   } catch {
     return null;
   }
@@ -61,10 +60,8 @@ function setBearerToken(token: string | null): void {
   if (typeof window === "undefined") return;
   try {
     if (token) {
-      window.localStorage.setItem(BEARER_KEY, token);
-      window.sessionStorage.removeItem(BEARER_KEY);
+      window.sessionStorage.setItem(BEARER_KEY, token);
     } else {
-      window.localStorage.removeItem(BEARER_KEY);
       window.sessionStorage.removeItem(BEARER_KEY);
     }
   } catch {
@@ -72,7 +69,7 @@ function setBearerToken(token: string | null): void {
   }
 }
 
-/** Bearer plugin exposes the signed session on this header. Cookies are partitioned in the preview iframe, so email sign-in must keep it. */
+/** Bearer plugin exposes the signed session on this header for embedded previews. */
 export function sessionTokenFromAuthResponse(header: string | null): string | null {
   const raw = header?.trim();
   if (!raw) return null;

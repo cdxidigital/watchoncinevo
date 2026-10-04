@@ -60,6 +60,11 @@ export const Route = createRootRoute({
         <HeadContent />
       </head>
       <body className="bg-cine-bg text-cine-text antialiased">
+        <div className="global-live-backdrop" aria-hidden="true">
+          <span className="global-live-backdrop__beam" />
+          <span className="global-live-backdrop__screen" />
+          <span className="global-live-backdrop__dust" />
+        </div>
         <PreviewHostBridge />
         <Rehydrate />
         <Pwa />

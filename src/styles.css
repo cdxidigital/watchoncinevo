@@ -37,9 +37,10 @@
   [role="button"]:not(:disabled) {
     cursor: pointer;
   }
-  html,
-  body,
-  #app {
+html,
+body,
+#app {
+  position: relative;
     background: var(--color-cine-bg);
     color: var(--color-cine-text);
     min-height: 100%;
@@ -860,9 +861,18 @@ html[data-theme] .glass-strong {
     radial-gradient(ellipse 70% 40% at 50% 100%, rgb(255 255 255 / 7%), transparent 55%);
 }
 
-.house-still {
-  display: none;
-}
+  .house-still {
+  display: block;
+  pointer-events: none;
+  position: fixed;
+  inset: -6%;
+  z-index: 0;
+  background: url('/stills/neon-alley.jpg') center / cover;
+  opacity: 0.12;
+  filter: saturate(0.45) contrast(1.15) brightness(0.7);
+  transform: scale(1.08);
+  animation: cinema-drift 24s ease-in-out infinite alternate;
+  }
 
 html[data-theme="day"] .house-still,
 html[data-theme="day"] .house-ambient,
@@ -2858,6 +2868,78 @@ html[data-theme="paper"] .house-ambient {
 .public-prose h2 { margin: 0; font-family: var(--font-ui); font-size: 1.15rem; font-weight: 600; letter-spacing: -0.02em; }
 .public-prose p { margin: 0.4rem 0 0; color: var(--color-cine-muted); line-height: 1.55; }
 .public-prose a { color: var(--color-cine-cyan); }
+
+/* The house feels like a place: slow projector drift, aisle lights, and a quiet marquee cue. */
+@keyframes global-screen-breathe {
+  0%, 100% { transform: scale(1) translate3d(-1%, 0, 0); opacity: .52; }
+  50% { transform: scale(1.08) translate3d(2%, -1%, 0); opacity: .76; }
+}
+@keyframes global-projector-sweep {
+  0% { transform: rotate(-10deg) translateX(-12%); opacity: .18; }
+  50% { opacity: .42; }
+  100% { transform: rotate(7deg) translateX(10%); opacity: .2; }
+}
+@keyframes global-dust-float {
+  0% { transform: translate3d(0, 8%, 0); opacity: .08; }
+  50% { opacity: .22; }
+  100% { transform: translate3d(2%, -8%, 0); opacity: .08; }
+}
+.global-live-backdrop { pointer-events: none; position: fixed; z-index: 0; inset: 0; overflow: hidden; background: var(--color-cine-bg); }
+.global-live-backdrop::after { content: ""; position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 40%, transparent 20%, rgb(0 0 0 / 28%) 72%, rgb(0 0 0 / 68%) 100%); }
+.global-live-backdrop__screen { position: absolute; inset: -10%; background: radial-gradient(ellipse 62% 52% at 50% 30%, color-mix(in srgb, var(--color-cine-cyan) 20%, transparent), transparent 70%); animation: global-screen-breathe 18s ease-in-out infinite; }
+.global-live-backdrop__beam { position: absolute; top: -42%; left: 38%; width: 38%; height: 150%; transform-origin: 50% 0; background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--color-cine-cyan) 12%, transparent), transparent); filter: blur(26px); mix-blend-mode: screen; animation: global-projector-sweep 20s ease-in-out infinite alternate; }
+.global-live-backdrop__dust { position: absolute; inset: -14%; opacity: .14; background-image: radial-gradient(circle, color-mix(in srgb, var(--color-cine-text) 70%, transparent) 0 1px, transparent 1.5px); background-size: 86px 112px; animation: global-dust-float 24s ease-in-out infinite alternate; }
+
+@keyframes cinema-drift {
+  0% { transform: scale(1.08) translate3d(-1%, -1%, 0); filter: saturate(0.42) contrast(1.12) brightness(0.68); }
+  100% { transform: scale(1.14) translate3d(1.5%, 1%, 0); filter: saturate(0.58) contrast(1.08) brightness(0.82); }
+}
+@keyframes marquee-pulse {
+  0%, 100% { opacity: .32; transform: scaleY(.82); }
+  50% { opacity: .85; transform: scaleY(1); }
+}
+@keyframes lamp-flicker {
+  0%, 100% { opacity: .34; }
+  48% { opacity: .72; }
+  52% { opacity: .46; }
+}
+.house-lights {
+  pointer-events: none; position: fixed; inset: 0; z-index: 1; display: flex; justify-content: space-around;
+  padding: 72px 5vw 0; opacity: .42; mix-blend-mode: screen;
+}
+.house-lights i { width: 1px; height: 36vh; background: linear-gradient(180deg, var(--color-cine-cyan), transparent); transform-origin: top; animation: marquee-pulse 7s ease-in-out infinite; }
+.house-lights i:nth-child(2) { animation-delay: -1.4s; height: 22vh; }
+.house-lights i:nth-child(3) { animation-delay: -3s; height: 44vh; }
+.house-lights i:nth-child(4) { animation-delay: -4.6s; height: 27vh; }
+.house-lights i:nth-child(5) { animation-delay: -5.8s; height: 18vh; }
+.house-scene-label { position: fixed; z-index: 2; top: 82px; right: clamp(20px, 4vw, 64px); display: grid; gap: 3px; text-align: right; opacity: .72; pointer-events: none; }
+.house-scene-label span { color: var(--color-cine-muted); font: 600 10px/1 var(--font-mono); letter-spacing: .18em; text-transform: uppercase; }
+.house-scene-label b { color: var(--color-cine-text); font: 500 clamp(14px, 1.4vw, 20px)/1.1 var(--font-display); letter-spacing: -.02em; }
+.player-cinema-badge { position: absolute; z-index: 11; top: 5.2rem; left: 50%; display: grid; gap: 3px; transform: translateX(-50%); text-align: center; pointer-events: none; opacity: .82; }
+.player-cinema-badge span { color: var(--color-cine-cyan); font: 600 9px/1 var(--font-mono); letter-spacing: .24em; }
+.player-cinema-badge b { color: var(--color-cine-text); font: 500 14px/1 var(--font-display); letter-spacing: .08em; text-transform: uppercase; }
+.gold-class-pov { pointer-events: none; position: absolute; z-index: 4; inset: 0; overflow: hidden; opacity: .72; transition: opacity 320ms var(--ease-cine); }
+.gold-class-pov::before { content: ""; position: absolute; inset: 0; background: radial-gradient(ellipse 68% 58% at 50% 38%, transparent 40%, rgb(0 0 0 / 18%) 78%, rgb(0 0 0 / 76%) 100%); }
+.gold-class-pov__headrest { position: absolute; left: 50%; bottom: -19%; width: min(45vw, 560px); height: 58%; transform: translateX(-50%); border-radius: 48% 48% 15% 15%; background: linear-gradient(100deg, transparent 0 9%, rgb(20 20 22 / 76%) 22% 78%, transparent 91%), radial-gradient(ellipse at 50% 22%, rgb(255 255 255 / 10%), transparent 52%); filter: blur(.2px); }
+.gold-class-pov__arm { position: absolute; bottom: -5%; width: 25%; height: 34%; border-radius: 50% 50% 0 0; background: linear-gradient(180deg, rgb(34 29 28 / 82%), rgb(8 8 9 / 92%)); box-shadow: inset 0 1px 0 rgb(255 255 255 / 9%); }
+.gold-class-pov__arm--left { left: -5%; transform: rotate(12deg); }
+.gold-class-pov__arm--right { right: -5%; transform: rotate(-12deg); }
+.gold-class-pov__table { position: absolute; left: 50%; bottom: -18%; width: 25%; height: 22%; transform: translateX(-50%); border-radius: 50% 50% 0 0; background: radial-gradient(ellipse, rgb(135 100 56 / 48%), rgb(18 14 12 / 92%) 62%); box-shadow: 0 -18px 40px rgb(201 154 83 / 12%); }
+.gold-class-pov__lamp { position: absolute; left: 50%; bottom: 10%; width: 7px; height: 7px; transform: translateX(-50%); border-radius: 50%; background: var(--color-cine-cyan); box-shadow: 0 0 28px 10px color-mix(in srgb, var(--color-cine-cyan) 38%, transparent); animation: lamp-flicker 4s ease-in-out infinite; }
+.cinevo-house[data-room="stage"] .house-still { background-position: center 42%; }
+.cinevo-house[data-room="sidebar"] .house-still { background-position: 68% center; filter: saturate(.32) contrast(1.2) brightness(.62); }
+.cinevo-house[data-room="tools"] .house-still { background-position: 32% center; filter: saturate(.62) contrast(1.12) brightness(.6); }
+@media (max-width: 760px) {
+  .house-scene-label { top: 66px; right: 18px; }
+  .house-lights { padding-top: 54px; }
+  .player-cinema-badge { top: 4.2rem; }
+  .gold-class-pov__headrest { width: 78vw; height: 44%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .global-live-backdrop__screen, .global-live-backdrop__beam, .global-live-backdrop__dust,
+  .house-still, .house-lights i, .gold-class-pov__lamp { animation: none; }
+  .house-still { transform: scale(1.08); }
+}
 
 @media (max-width: 760px) {
   .public-nav {
