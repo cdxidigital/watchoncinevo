@@ -37,9 +37,10 @@
   [role="button"]:not(:disabled) {
     cursor: pointer;
   }
-  html,
-  body,
-  #app {
+html,
+body,
+#app {
+  position: relative;
     background: var(--color-cine-bg);
     color: var(--color-cine-text);
     min-height: 100%;
@@ -2869,6 +2870,26 @@ html[data-theme="paper"] .house-ambient {
 .public-prose a { color: var(--color-cine-cyan); }
 
 /* The house feels like a place: slow projector drift, aisle lights, and a quiet marquee cue. */
+@keyframes global-screen-breathe {
+  0%, 100% { transform: scale(1) translate3d(-1%, 0, 0); opacity: .52; }
+  50% { transform: scale(1.08) translate3d(2%, -1%, 0); opacity: .76; }
+}
+@keyframes global-projector-sweep {
+  0% { transform: rotate(-10deg) translateX(-12%); opacity: .18; }
+  50% { opacity: .42; }
+  100% { transform: rotate(7deg) translateX(10%); opacity: .2; }
+}
+@keyframes global-dust-float {
+  0% { transform: translate3d(0, 8%, 0); opacity: .08; }
+  50% { opacity: .22; }
+  100% { transform: translate3d(2%, -8%, 0); opacity: .08; }
+}
+.global-live-backdrop { pointer-events: none; position: fixed; z-index: 0; inset: 0; overflow: hidden; background: var(--color-cine-bg); }
+.global-live-backdrop::after { content: ""; position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 40%, transparent 20%, rgb(0 0 0 / 28%) 72%, rgb(0 0 0 / 68%) 100%); }
+.global-live-backdrop__screen { position: absolute; inset: -10%; background: radial-gradient(ellipse 62% 52% at 50% 30%, color-mix(in srgb, var(--color-cine-cyan) 20%, transparent), transparent 70%); animation: global-screen-breathe 18s ease-in-out infinite; }
+.global-live-backdrop__beam { position: absolute; top: -42%; left: 38%; width: 38%; height: 150%; transform-origin: 50% 0; background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--color-cine-cyan) 12%, transparent), transparent); filter: blur(26px); mix-blend-mode: screen; animation: global-projector-sweep 20s ease-in-out infinite alternate; }
+.global-live-backdrop__dust { position: absolute; inset: -14%; opacity: .14; background-image: radial-gradient(circle, color-mix(in srgb, var(--color-cine-text) 70%, transparent) 0 1px, transparent 1.5px); background-size: 86px 112px; animation: global-dust-float 24s ease-in-out infinite alternate; }
+
 @keyframes cinema-drift {
   0% { transform: scale(1.08) translate3d(-1%, -1%, 0); filter: saturate(0.42) contrast(1.12) brightness(0.68); }
   100% { transform: scale(1.14) translate3d(1.5%, 1%, 0); filter: saturate(0.58) contrast(1.08) brightness(0.82); }
@@ -2915,6 +2936,7 @@ html[data-theme="paper"] .house-ambient {
   .gold-class-pov__headrest { width: 78vw; height: 44%; }
 }
 @media (prefers-reduced-motion: reduce) {
+  .global-live-backdrop__screen, .global-live-backdrop__beam, .global-live-backdrop__dust,
   .house-still, .house-lights i, .gold-class-pov__lamp { animation: none; }
   .house-still { transform: scale(1.08); }
 }
