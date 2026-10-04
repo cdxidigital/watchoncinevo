@@ -416,6 +416,16 @@ export function Player() {
       aria-label={`${title.title} player`}
       onClick={() => file && onToggle()}
     >
+      <div className="gold-class-pov" aria-hidden="true">
+        <span className="gold-class-pov__headrest" />
+        <span className="gold-class-pov__arm gold-class-pov__arm--left" />
+        <span className="gold-class-pov__arm gold-class-pov__arm--right" />
+        <span className="gold-class-pov__table" />
+        <span className="gold-class-pov__lamp" />
+      </div>
+      <div className="player-cinema-badge">
+        <span>GOLD CLASS</span><b>Seat POV</b>
+      </div>
       {file ? (
         <video
           ref={videoRef}
