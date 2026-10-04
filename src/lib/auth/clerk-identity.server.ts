@@ -10,7 +10,14 @@ const clerkConfigured = Boolean(
 export async function resolveClerkIdentity(): Promise<ClerkIdentity | null> {
   if (!clerkConfigured) return null;
 
-  const { userId } = await clerkAuth();
+  let userId: string | null;
+  try {
+    ({ userId } = await clerkAuth());
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (message.includes("without configuring the middleware")) return null;
+    throw error;
+  }
   if (!userId) return null;
 
   const client = await clerkClient();
@@ -35,7 +42,7 @@ export async function resolveClerkIdentity(): Promise<ClerkIdentity | null> {
   if (matched.length !== 1) {
     await sql.query(
       "insert into cinevo_clerk_identity (clerk_user_id, internal_user_id, email, status) values ($1, $2, $3, 'conflict') on conflict (clerk_user_id) do update set status = 'conflict', updated_at = current_timestamp",
-      [userId, `clerk:${userId}`, email],
+      [userId, null, email],
     );
     return null;
   }
