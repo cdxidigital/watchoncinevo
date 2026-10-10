@@ -8,11 +8,11 @@ import {
   serverAddressError,
 } from "./playback-urls.ts";
 
-test("plex playback is a CINEVO-side stream, not direct play", () => {
+test("plex playback prefers direct play and keeps the proxy fallback", () => {
   const target = plexStreamTarget("https://plex.example:32400/", "plex-99", "secret-token", "client-1");
   const url = new URL(target.url);
   assert.equal(url.pathname, "/video/:/transcode/universal/start.mp4");
-  assert.equal(url.searchParams.get("directPlay"), "0");
+  assert.equal(url.searchParams.get("directPlay"), "1");
   assert.equal(url.searchParams.get("directStream"), "1");
   assert.equal(url.searchParams.get("videoQuality"), "99");
   assert.equal(url.searchParams.get("maxVideoBitrate"), "200000");

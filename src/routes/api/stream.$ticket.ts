@@ -23,6 +23,8 @@ function passHeaders(upstream: Response, download: boolean) {
   if (!out.has("Accept-Ranges")) out.set("Accept-Ranges", "bytes");
   if (!out.has("Content-Type")) out.set("Content-Type", "video/mp4");
   out.set("Cache-Control", "private, no-transform, max-age=7200");
+  out.set("Vary", "Range");
+  out.set("X-Content-Type-Options", "nosniff");
   if (download) out.set("Content-Disposition", 'attachment; filename="cinevo-original.mp4"');
   return out;
 }

@@ -41,7 +41,7 @@ export function plexStreamTarget(
     partIndex: "0",
     protocol: "http",
     fastSeek: "1",
-    directPlay: "0",
+    directPlay: compatible ? "0" : "1",
     directStream: compatible ? "0" : "1",
     directStreamAudio: compatible ? "0" : "1",
     videoQuality: compatible ? "80" : "99",
