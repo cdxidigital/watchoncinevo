@@ -60,6 +60,8 @@ export function PlexConnect() {
           ? `${res.servers.length} Plex ${res.servers.length === 1 ? "server" : "servers"} on this account.`
           : "Signed in, but no media servers are sharing with this Plex account yet.",
       );
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : "Could not load Plex servers.");
     } finally {
       setPending(false);
     }
@@ -104,13 +106,17 @@ export function PlexConnect() {
     }
   };
 
-  const openServer = async (server: PlexServer) => {
-    if (!plexToken) return;
+  const openServer = async (server: PlexServer, tokenOverride?: string) => {
+    const token = tokenOverride || plexToken;
+    if (!token) {
+      setMessage("Sign in with Plex or provide a Plex token first.");
+      return;
+    }
     setPending(true);
     setMessage(`Reaching ${server.name}…`);
     try {
       const res = await plexOpenServer({
-        data: { clientId: clientId(), token: server.accessToken || plexToken, server },
+        data: { clientId: clientId(), token: server.accessToken || token, server },
       });
       if (!res.ok) {
         setMessage(res.error);
@@ -123,6 +129,8 @@ export function PlexConnect() {
           ? `Connected to ${server.name} over ${res.kind}. Choose libraries to index.`
           : `${server.name} is online, but it has no libraries yet.`,
       );
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : `Could not reach ${server.name}.`);
     } finally {
       setPending(false);
     }
@@ -175,6 +183,8 @@ export function PlexConnect() {
       });
       setOpened(null);
       setMessage(`Imported ${titles.length} titles from ${opened.server.name}. CINEVO will proxy playback.`);
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : "Could not import that Plex library.");
     } finally {
       setPending(false);
     }
@@ -197,7 +207,7 @@ export function PlexConnect() {
       presence: true,
       connections: [{ uri: manualUrl.replace(/\/$/, ""), local: true, relay: false, protocol: manualUrl.startsWith("https") ? "https" : "http", address: "", port: 32400 }],
     };
-    await openServer(server);
+    await openServer(server, token);
   };
 
   const owned = plexServers.filter((s) => s.owned);
