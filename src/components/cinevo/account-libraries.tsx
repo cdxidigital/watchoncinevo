@@ -42,6 +42,9 @@ export function AccountLibraries() {
   const plexToken = useCinevo((s) => s.plexToken);
   const nodeToken = useCinevo((s) => s.nodeToken);
   const remoteCount = useCinevo((s) => s.remoteTitles.length);
+  const plexUser = useCinevo((s) => s.plexUser);
+  const plexClientId = useCinevo((s) => s.plexClientId);
+  const plexServerCount = useCinevo((s) => s.plexServers.length);
   const ready = useRef("");
 
   useEffect(() => {
@@ -100,7 +103,7 @@ export function AccountLibraries() {
       void saveAccountLibrary({ data: snapshot() }).catch(() => undefined);
     }, 800);
     return () => window.clearTimeout(timer);
-  }, [user, sources, plexToken, nodeToken, remoteCount]);
+  }, [user, sources, plexToken, plexUser, plexClientId, plexServerCount, nodeToken, remoteCount]);
 
   return null;
 }

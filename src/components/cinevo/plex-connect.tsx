@@ -4,6 +4,7 @@ import { connectionKind, plexAuthUrl, plexClientId, type PlexSection, type PlexS
 import { plexImportSections, plexListServers, plexOpenServer, plexPollPin, plexStartPin } from "@/lib/plex-api";
 import { remoteTitle } from "@/lib/library";
 import { useCinevo } from "@/lib/cinevo-store";
+import { saveAccountLibrary } from "@/lib/library-account";
 
 type Opened = {
   server: PlexServer;
@@ -44,6 +45,24 @@ export function PlexConnect() {
     return existing;
   };
 
+  const persistPlexSession = async () => {
+    const state = useCinevo.getState();
+    await saveAccountLibrary({
+      data: {
+        plexToken: state.plexToken,
+        plexUser: state.plexUser,
+        plexClientId: state.plexClientId,
+        plexServers: state.plexServers,
+        nodeUrl: state.nodeUrl,
+        nodeToken: state.nodeToken,
+        nodeDevice: state.nodeDevice,
+        sources: state.sources,
+        remoteTitles: state.remoteTitles,
+        nodeTitles: state.localTitles.filter((title) => title.id.startsWith("node-")),
+      },
+    });
+  };
+
   const refreshServers = async (token = plexToken, user = plexUser) => {
     if (!token) return;
     setPending(true);
@@ -55,6 +74,7 @@ export function PlexConnect() {
       }
       setPlexSession(token, res.username || user, res.servers, clientId());
       setPlexServers(res.servers);
+      await persistPlexSession();
       setMessage(
         res.servers.length
           ? `${res.servers.length} Plex ${res.servers.length === 1 ? "server" : "servers"} on this account.`
