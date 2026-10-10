@@ -9,15 +9,6 @@ import {
   type RemoteNow,
 } from "@/lib/remote-protocol";
 
-const EMPTY_NOW: RemoteNow = {
-  title: "",
-  detail: "",
-  playing: false,
-  position: 0,
-  volume: 1,
-  titles: [],
-};
-
 function asJson(value: unknown): unknown {
   if (typeof value === "string") {
     try {

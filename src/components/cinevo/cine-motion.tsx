@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components -- hooks intentionally share this motion module with its components. */
 import { useEffect, useRef, useState, type CSSProperties, type ElementType, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 

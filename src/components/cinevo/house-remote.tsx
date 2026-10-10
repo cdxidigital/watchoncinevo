@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components -- the install event bridge belongs with this component. */
 import { useEffect, useState } from "react";
 import { Smartphone } from "lucide-react";
 import { closeHouseRemote, formatHouseCode, readHouseCode, rotateHouseRemote, writeHouseCode } from "@/lib/remote-client";

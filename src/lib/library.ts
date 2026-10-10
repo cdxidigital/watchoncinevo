@@ -76,7 +76,7 @@ const ACCENTS: Accent[] = ["cyan", "magenta", "violet", "amber"];
 export function titleFromFile(file: File, folderName: string, index: number): LibraryTitle {
   const parsed = parseFilename(file.name);
   const id = `folder-${hash(`${folderName}:${file.name}:${file.size}`)}`;
-  const url = rememberBlob(id, file);
+  rememberBlob(id, file);
   const accent = ACCENTS[index % ACCENTS.length];
   return {
     id,

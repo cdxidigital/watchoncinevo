@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft, CheckCircle2, Computer, KeyRound, Link2, LoaderCircle, RefreshCw, ShieldCheck, Unplug } from "lucide-react";
+import { ArrowLeft, CheckCircle2, KeyRound, Link2, LoaderCircle, RefreshCw, ShieldCheck, Unplug } from "lucide-react";
 import { useState } from "react";
 import { InstallerCards } from "@/components/cinevo/installers";
 import { checkNode, DEFAULT_NODE, nodeStatus, pairNode, revokeConnection, type NodeStatus } from "@/lib/node-client";

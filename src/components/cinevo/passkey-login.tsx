@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components -- browser passkey helpers are colocated with the UI. */
 import { useEffect, useRef, useState } from "react";
 import { renderSVG } from "uqr";
 import { getBearerToken } from "@/lib/auth/client";
