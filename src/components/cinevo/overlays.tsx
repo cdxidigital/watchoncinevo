@@ -158,7 +158,10 @@ export function SearchOverlay() {
   const results = useMemo(() => {
     const query = q.trim();
     if (!query) return [];
-    return filterCatalog({ query, pool: [...extra, ...remote] }).slice(0, 8);
+    const pool = [...libraryPool(), ...extra, ...remote].filter(
+      (title, index, all) => all.findIndex((candidate) => candidate.id === title.id) === index,
+    );
+    return filterCatalog({ query, pool }).slice(0, 12);
   }, [q, extra, remote]);
   useEffect(() => {
     if (!open) setQ("");

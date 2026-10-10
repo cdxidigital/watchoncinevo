@@ -1,4 +1,4 @@
-import { Clock3, Library, Play, Plus, Server, Settings2, Share2, Shuffle, Sparkles, Star } from "lucide-react";
+import { Clock3, Library, Play, Plus, Search, Server, Settings2, Share2, Shuffle, Sparkles, Star, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import {
   MOODS,
@@ -450,20 +450,38 @@ export function StageRoom() {
 export function BrowseRoom({ kind: initialKind = "all" }: { kind?: "all" | "movie" | "series" }) {
   const [kind, setKind] = useState<"all" | "movie" | "series">(initialKind);
   const [genre, setGenre] = useState("All");
+  const [query, setQuery] = useState("");
   useEffect(() => {
     setKind(initialKind);
     setGenre("All");
   }, [initialKind]);
   const library = useLibrary();
-  const titles = useMemo(() => filterCatalog({ kind, genre, pool: library }), [kind, genre, library]);
+  const titles = useMemo(() => filterCatalog({ query, kind, genre, pool: library }), [query, kind, genre, library]);
   const genres = genresIn(library);
   const heading = initialKind === "movie" ? "Movies" : initialKind === "series" ? "TV Shows" : "Browse";
   return (
     <div className="house-page library-os">
-      <header>
-        <BrandKicker>CINEVO library</BrandKicker>
-        <h1>{heading}</h1>
-        <p className="lede">A poster wall you can filter, sort, and switch between grid, list, and hybrid.</p>
+      <header className="library-page-header">
+        <div>
+          <BrandKicker>CINEVO library</BrandKicker>
+          <h1>{heading}</h1>
+          <p className="lede">Your media, organised by type and source.</p>
+        </div>
+        <label className="library-page-search">
+          <Search size={16} aria-hidden="true" />
+          <span className="sr-only">Search {heading.toLowerCase()}</span>
+          <input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Search this library"
+            type="search"
+          />
+          {query ? (
+            <button type="button" aria-label="Clear library search" onClick={() => setQuery("")}>
+              <X size={15} />
+            </button>
+          ) : null}
+        </label>
       </header>
       <div className="command-strip">
         <div className="house-sources" role="tablist" aria-label="Kind">
