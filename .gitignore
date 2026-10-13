@@ -9,3 +9,7 @@ node_modules/
 nodes/cinevo-node/dist/
 artifacts/
 screenshots/
+
+# Android signing keystores (keep local only)
+*.jks
+android/**/*.jks

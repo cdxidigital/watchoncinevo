@@ -6,6 +6,8 @@ BT="$SDK/build-tools/34.0.0"
 JAR="$SDK/platforms/android-34/android.jar"
 WORK="${TMPDIR:-/tmp}/cinevo-tv-apk"
 OUT="$ROOT/../../public/installers/CINEVO-TV.apk"
+STOREPASS="${CINEVO_TV_STOREPASS:?Set CINEVO_TV_STOREPASS}"
+KEYPASS="${CINEVO_TV_KEYPASS:-$STOREPASS}"
 rm -rf "$WORK"
 mkdir -p "$WORK/classes" "$WORK/compiled"
 "$BT/aapt2" compile --dir "$ROOT/res" -o "$WORK/compiled"
@@ -18,18 +20,18 @@ mkdir -p "$WORK/classes" "$WORK/compiled"
   "$WORK/compiled/"*.flat
 javac --release 17 -classpath "$JAR" -d "$WORK/classes" "$ROOT/src/me/cinevo/tv/MainActivity.java"
 "$BT/d8" --min-api 24 --lib "$JAR" --output "$WORK" "$WORK/classes/me/cinevo/tv/"*.class
-python3 - << PY
+python3 - << PY2
 import zipfile
 zipfile.ZipFile("$WORK/base.apk", "a").write("$WORK/classes.dex", "classes.dex")
-PY
+PY2
 "$BT/zipalign" -p -f 4 "$WORK/base.apk" "$WORK/aligned.apk"
-KEYSTORE="$ROOT/cinevo-tv.jks"
+KEYSTORE="${CINEVO_TV_KEYSTORE:-$ROOT/cinevo-tv.jks}"
 if [[ ! -f "$KEYSTORE" ]]; then
-  keytool -genkeypair -keystore "$KEYSTORE" -storepass cinevo-tv -keypass cinevo-tv \
+  keytool -genkeypair -keystore "$KEYSTORE" -storepass "$STOREPASS" -keypass "$KEYPASS" \
     -alias cinevo -keyalg RSA -keysize 2048 -validity 3650 \
     -dname "CN=CINEVO TV, O=CINEVO, C=AU"
 fi
-"$BT/apksigner" sign --ks "$KEYSTORE" --ks-pass pass:cinevo-tv --key-pass pass:cinevo-tv \
+"$BT/apksigner" sign --ks "$KEYSTORE" --ks-pass "pass:$STOREPASS" --key-pass "pass:$KEYPASS" \
   --out "$OUT" "$WORK/aligned.apk"
 "$BT/apksigner" verify --verbose "$OUT"
 echo "wrote $OUT"
